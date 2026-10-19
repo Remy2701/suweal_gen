@@ -205,6 +205,29 @@ fn consume_lambda(
   next(node.Lambda(parameters: parameters, body: body), input)
 }
 
+fn consume_else_ifs(
+  input: List(Positioned(lexer.Token)),
+  accumulator: List(#(node.Node, node.Node)),
+  next: fn(List(#(node.Node, node.Node)), List(Positioned(lexer.Token))) ->
+    #(ParserState, ParserResult(a)),
+) -> #(ParserState, ParserResult(a)) {
+  case input {
+    [
+      positioned.Positioned(lexer.Else, _, _),
+      positioned.Positioned(lexer.If, _, _),
+      ..input
+    ] -> {
+      use condition, input <- consume_expression(input)
+      use input <- consume_keyword(lexer.LeftCurlyBracket, input)
+      use expression, input <- consume_expression(input)
+      use input <- consume_keyword(lexer.RightCurlyBracket, input)
+
+      consume_else_ifs(input, [#(condition, expression), ..accumulator], next)
+    }
+    _ -> next(list.reverse(accumulator), input)
+  }
+}
+
 fn consume_value(
   input: List(Positioned(lexer.Token)),
   next: fn(node.Node, List(Positioned(lexer.Token))) ->
@@ -246,13 +269,42 @@ fn consume_value(
     [Positioned(lexer.RightArrow, ..), ..] -> next(node.Self, input)
     [Positioned(lexer.LeftRightArrow, ..), ..] -> next(node.Self, input)
     [Positioned(lexer.If, ..), ..rest] -> {
-      use expression, input <- consume_expression(rest)
-      use input <- consume_keyword(lexer.Then, input)
-      use then_branch, input <- consume_expression(input)
+      use condition, input <- consume_expression(rest)
+      use with_curly_bracket, input <- consume_keyword_one_of(
+        [
+          #(lexer.Then, False),
+          #(lexer.LeftCurlyBracket, True),
+        ],
+        input,
+      )
+      use expression, input <- consume_expression(input)
+      use input <-
+        case with_curly_bracket {
+          True -> consume_keyword(lexer.RightCurlyBracket, input, _)
+          False -> fn(next) { next(input) }
+        }
+      use else_ifs, input <-
+        case with_curly_bracket {
+          True -> consume_else_ifs(input, [], _)
+          False -> fn(next) { next([], input) }
+        }
       use input <- consume_keyword(lexer.Else, input)
       use else_branch, input <- consume_expression(input)
+      use input <-
+        case with_curly_bracket {
+          True -> consume_keyword(lexer.LeftCurlyBracket, input, _)
+          False -> consume_keyword(lexer.Then, input, _)
+        }
       use input <- consume_keyword(lexer.End, input)
-      next(node.If(expression, then_branch, else_branch), input)
+      use input <-
+        case with_curly_bracket {
+          True -> consume_keyword(lexer.RightCurlyBracket, input, _)
+          False -> fn(next) { next(input) }
+        }
+      next(
+        node.If(condition:, then_: expression, else_ifs:, else_: else_branch),
+        input,
+      )
     }
     [Positioned(lexer.Select, ..), ..] -> {
       use select, input <- consume_select(ParserState([]), input)
@@ -675,8 +727,8 @@ fn do_define_normal_table(
   input: List(Positioned(lexer.Token)),
   name: String,
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
-  use schemafull, input <- consume_keyword_one_of(
-    [#(lexer.Schemafull, True)],
+  use schema, input <- consume_keyword_one_of(
+    [#(lexer.Schemafull, node.Schemafull), #(lexer.Schemaless, node.Schemaless)],
     input,
   )
   use as_, input <- on_token(lexer.As, input, fn(input) {
@@ -685,16 +737,17 @@ fn do_define_normal_table(
   })
   use input <- consume_keyword(lexer.Permissions, input)
   use permissions, input <- consume_keyword_one_of(
-    [#(lexer.Full, node.Full), #(lexer.None, node.None)],
+    [#(lexer.Full, node.PermissionFull), #(lexer.None, node.PermissionNone)],
     input,
   )
 
   #(
     add_node(
-      node.DefineNormalTable(
+      node.DefineTable(
         name: name,
-        schemafull: schemafull,
-        permissions: permissions,
+        type_: node.NormalTable,
+        schema: schema,
+        permissions: [permissions],
         as_: as_,
       ),
       state,
@@ -703,6 +756,7 @@ fn do_define_normal_table(
   )
 }
 
+/// TODO: Support for permission for
 fn do_define_relation_table(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
@@ -712,24 +766,24 @@ fn do_define_relation_table(
   use in, input <- consume_identifier(input)
   use input <- consume_keyword(lexer.Out, input)
   use out, input <- consume_identifier(input)
-  use schemafull, input <- consume_keyword_one_of(
-    [#(lexer.Schemafull, True)],
+  use schema, input <- consume_keyword_one_of(
+    [#(lexer.Schemafull, node.Schemafull), #(lexer.Schemaless, node.Schemaless)],
     input,
   )
   use input <- consume_keyword(lexer.Permissions, input)
   use permissions, input <- consume_keyword_one_of(
-    [#(lexer.Full, node.Full), #(lexer.None, node.None)],
+    [#(lexer.Full, node.PermissionFull), #(lexer.None, node.PermissionNone)],
     input,
   )
 
   #(
     add_node(
-      node.DefineRelationTable(
+      node.DefineTable(
         name: name,
-        schemafull: schemafull,
-        permissions: permissions,
-        in: in,
-        out: out,
+        type_: node.RelationTable(in: in, out: out),
+        schema: schema,
+        permissions: [permissions],
+        as_: option.None,
       ),
       state,
     ),
@@ -737,6 +791,7 @@ fn do_define_relation_table(
   )
 }
 
+/// TODO: Support for permission for
 fn do_define_table(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
@@ -789,7 +844,7 @@ fn do_define_field(
   })
   use permissions, input <- on_token(lexer.Permissions, input, fn(input) {
     use permissions, input <- consume_keyword_one_of(
-      [#(lexer.Full, node.Full), #(lexer.None, node.None)],
+      [#(lexer.Full, node.PermissionFull), #(lexer.None, node.PermissionNone)],
       input,
     )
     #(state, Next(#(permissions, input)))
@@ -803,7 +858,7 @@ fn do_define_field(
         type_: type_,
         default: default,
         assert_: assert_,
-        permissions: permissions,
+        permissions: permissions |> option.map(list.wrap) |> option.unwrap([]),
         flexible: flexible,
       ),
       state,
@@ -812,6 +867,7 @@ fn do_define_field(
   )
 }
 
+/// TODO: Support for permission for
 fn do_define_index(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
@@ -980,11 +1036,15 @@ fn do_create(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let #(only, input) = case input {
+    [Positioned(lexer.Only, ..), ..rest] -> #(True, rest)
+    _ -> #(False, input)
+  }
   use target, input <- consume_identifier(input)
   use input <- consume_keyword(lexer.Set, input)
   use set, input <- do_update_set_field([], input)
 
-  #(add_node(node.Create(target: target, set: set), state), Next(input))
+  #(add_node(node.Create(only:, target:, set:), state), Next(input))
 }
 
 fn do_delete(

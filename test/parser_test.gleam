@@ -15,10 +15,11 @@ pub fn parse_define_table_test() {
 
   assert ast
     == [
-      node.DefineNormalTable(
+      node.DefineTable(
         name: "user",
-        schemafull: True,
-        permissions: node.None,
+        type_: node.NormalTable,
+        schema: node.Schemafull,
+        permissions: [],
         as_: option.None,
       ),
     ]
@@ -40,7 +41,7 @@ pub fn parse_define_string_field_test() {
         flexible: False,
         default: option.Some(node.None),
         assert_: option.None,
-        permissions: option.Some(node.Full),
+        permissions: [node.PermissionFull],
       ),
     ]
 }
@@ -61,7 +62,7 @@ pub fn parse_define_optional_string_field_test() {
         flexible: False,
         default: option.Some(node.None),
         assert_: option.None,
-        permissions: option.Some(node.Full),
+        permissions: [node.PermissionFull],
       ),
     ]
 }
@@ -90,7 +91,7 @@ pub fn parse_define_string_field_with_assert_test() {
             node.Value(surreal_ql.String("C")),
           ]),
         )),
-        permissions: option.Some(node.Full),
+        permissions: [node.PermissionFull],
       ),
     ]
 }
@@ -120,7 +121,7 @@ pub fn parse_define_string_optional_field_with_assert_test() {
             node.Value(surreal_ql.String("C")),
           ]),
         )),
-        permissions: option.Some(node.Full),
+        permissions: [node.PermissionFull],
       ),
     ]
 }

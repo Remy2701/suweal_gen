@@ -2500,10 +2500,14 @@ fn generate_query_builder(
           module.identifier.create("query"),
           module.identifier.create("Query"),
         ))
-        |> module.function_call.add(module.identifier.create(result_type))
         |> module.function_call.add(
-          option_module.type_(module.identifier.create(result_type)),
-        ),
+          module.function_call.create(module.identifier.create("List"))
+          |> module.function_call.add(module.identifier.create(result_type)),
+        )
+        |> module.function_call.add(option_module.type_(
+          module.function_call.create(module.identifier.create("List"))
+          |> module.function_call.add(module.identifier.create(result_type)),
+        )),
       ),
     fn(module, entry) {
       module.function_definition.add_aliased_parameter(
@@ -2541,7 +2545,9 @@ fn generate_query_builder(
     )
     |> module.function_call.add_with_alias(
       "serializer",
-      module.function_call.create(module.identifier.create("serializer")),
+      offstage_serialize_module.list_of(
+        module.function_call.create(module.identifier.create("serializer")),
+      ),
     )
     |> module.function_call.add_with_alias(
       "parameters",
@@ -2565,7 +2571,7 @@ fn do_define_normal_table_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.DefineNormalTable(name:, as_:, ..) = node
+  let assert node.DefineTable(name:, as_:, ..) = node
   use info <- result.try(
     dict.get(tables, name)
     |> result.replace_error("Unknown table for field: " <> name),
@@ -2637,7 +2643,7 @@ fn do_define_relation_table_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.DefineRelationTable(name:, ..) = node
+  let assert node.DefineTable(name:, ..) = node
   use info <- result.try(
     dict.get(tables, name)
     |> result.replace_error("Unknown table for field: " <> name),
@@ -3016,7 +3022,7 @@ fn do_create_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.Create(target:, set:) = node
+  let assert node.Create(only:, target:, set:) = node
   use table_info <- result.try(
     dict.get(tables, target)
     |> result.map_error(fn(_) { "Unknown table for create: " <> target }),
@@ -3472,10 +3478,10 @@ fn do_node(
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
   case node {
-    node.DefineNormalTable(..) -> {
+    node.DefineTable(type_: node.NormalTable, ..) -> {
       do_define_normal_table_node(config, node, tables)
     }
-    node.DefineRelationTable(..) -> {
+    node.DefineTable(type_: node.RelationTable(..), ..) -> {
       do_define_relation_table_node(config, node, tables)
     }
     node.Select(..) -> {
@@ -3549,7 +3555,7 @@ pub fn process_delegated_table(
                       object_fields: f.object_fields,
                     )
                   })
-                node.WrappedNode(node.If(_, then_:, else_:)) ->
+                node.WrappedNode(node.If(_, then_:, else_:, ..)) ->
                   case then_, else_ {
                     node.None, node.Identifier(name)
                     | node.Identifier(name), node.None

@@ -269,9 +269,9 @@ fn do_extract_tables(
   node: node.Node,
 ) -> Result(NodeProcessorState, String) {
   case node {
-    node.DefineNormalTable(name:, as_:, ..) ->
+    node.DefineTable(name:, type_: node.NormalTable, as_:, ..) ->
       extract_normal_table(path, state, name, as_)
-    node.DefineRelationTable(name:, ..) ->
+    node.DefineTable(name:, type_: node.RelationTable(..), ..) ->
       extract_relation_table(path, state, name)
     node.DefineField(name:, table:, type_:, assert_:, ..) ->
       extract_field(path, state, name, table, type_, assert_)

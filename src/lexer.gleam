@@ -52,6 +52,7 @@ pub type Token {
   Relation
   Relate
   Schemafull
+  Schemaless
   Select
   Set
   Table
@@ -233,6 +234,7 @@ fn do_end_identifier(
     _, "RELATION" -> state |> add_token(Relation)
     _, "RELATE" -> state |> add_token(Relate)
     _, "SCHEMAFULL" -> state |> add_token(Schemafull)
+    _, "SCHEMALESS" -> state |> add_token(Schemaless)
     _, "SELECT" -> state |> add_token(Select)
     _, "SET" -> state |> add_token(Set)
     _, "TABLE" -> state |> add_token(Table)
