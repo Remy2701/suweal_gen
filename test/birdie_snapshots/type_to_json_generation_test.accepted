@@ -1,0 +1,52 @@
+---
+version: 2.0.2
+title: type_to_json_generation_test
+file: ./test/builder/type_to_json_test.gleam
+test_name: type_to_json_generation_test
+---
+import gleam/json
+import gleam/time/calendar
+import gleam/time/timestamp
+import json_value
+import suweal/identifier
+import suweal/point
+import suweal/record
+
+pub fn to_json(self: User) -> json.Json {
+  json.object(
+    [
+      #("s", json.string(self.s)),
+      #("i", json.int(self.i)),
+      #("f", json.float(self.f)),
+      #("b", json.bool(self.b)),
+      #(
+        "a",
+        json.array(
+          self.a,
+          fn(value) {
+            json.string(value)
+          },
+        ),
+      ),
+      #(
+        "d",
+        json.string(timestamp.to_rfc3339(self.d, calendar.utc_offset)),
+      ),
+      #(
+        "o",
+        json.nullable(
+          self.o,
+          fn(value) {
+            json.string(value)
+          },
+        ),
+      ),
+      #("id", self.id |> identifier.to_string |> json.string),
+      #("rc", self.rc |> record.to_json(id.to_json)),
+      #("obj", json_value.to_json(self.obj)),
+      #("nested_obj", nested_obj_to_json(self.nested_obj)),
+      #("p", point.to_json(self.p)),
+      #("e", json.string(enum_to_string(self.e))),
+    ],
+  )
+}
