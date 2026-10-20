@@ -1,0 +1,13 @@
+---
+version: 2.0.2
+title: type_definition_generation_with_single_id_field
+file: ./test/builder/type_definition_test.gleam
+test_name: type_definition_generation_with_single_id_field_test
+---
+import suweal/identifier
+
+pub type User {
+  User(
+    id: identifier.Identifier(User),
+  )
+}

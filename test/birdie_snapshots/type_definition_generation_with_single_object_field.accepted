@@ -1,0 +1,13 @@
+---
+version: 2.0.2
+title: type_definition_generation_with_single_object_field
+file: ./test/builder/type_definition_test.gleam
+test_name: type_definition_generation_with_single_object_test
+---
+import json_value
+
+pub type User {
+  User(
+    object: json_value.JsonValue,
+  )
+}

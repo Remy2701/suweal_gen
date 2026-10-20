@@ -1,0 +1,15 @@
+---
+version: 2.0.2
+title: type_definition_generation_with_primitive_fields
+file: ./test/builder/type_definition_test.gleam
+test_name: type_definition_generation_with_primitive_fields_test
+---
+pub type Primitives {
+  Primitives(
+    s: String,
+    i: Int,
+    f: Float,
+    b: Bool,
+    a: List(String),
+  )
+}

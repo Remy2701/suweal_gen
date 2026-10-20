@@ -10,6 +10,7 @@ import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
+import internal/builder/type_definition
 import omcg/decode_module
 import omcg/module
 import omcg/module_common
@@ -17,78 +18,6 @@ import omcg/offstage_serialize_module
 import omcg/option_module
 import suweal/node
 import suweal/surreal_type.{type SurrealType}
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                     Table Type Definition                                     //
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-
-fn generate_type_definition_field(
-  module: module.Module,
-  field: extractor.TableField,
-) {
-  module
-  |> module.type_variant.field(Some(field.name), case field.linked_enum {
-    Some(enum) -> {
-      let inner = case string.split_once(enum, ".") {
-        Ok(#(module_str, name)) -> {
-          module.binop.access(
-            module.identifier.create(module_str),
-            module.identifier.create(common.string_to_pascal_case(name)),
-          )
-        }
-        _ -> {
-          module.identifier.create(common.string_to_pascal_case(enum))
-        }
-      }
-
-      case field.type_ {
-        surreal_type.Option(_) -> option_module.type_(inner)
-        _ -> inner
-      }
-    }
-    None -> {
-      case field.object_fields {
-        [] -> surreal_type.to_gleam_type(field.type_)
-        [_, ..] ->
-          case field.type_ {
-            surreal_type.Array(surreal_type.Object) -> {
-              module.function_call.create(module.identifier.create("List"))
-              |> module.function_call.add(
-                common.string_to_pascal_case(field.name)
-                |> module.identifier.create(),
-              )
-            }
-            surreal_type.Object -> {
-              module.identifier.create(common.string_to_pascal_case(field.name))
-            }
-            _ -> {
-              io.println(
-                "Warning: unsupported object field type for `"
-                <> field.name
-                <> "`: "
-                <> module.module_node_to_string(surreal_type.to_gleam_type(
-                  field.type_,
-                )),
-              )
-              module.identifier.create(common.string_to_pascal_case(field.name))
-            }
-          }
-      }
-    }
-  })
-}
-
-fn generate_type_definition(
-  name: String,
-  fields: List(extractor.TableField),
-) -> module.Module {
-  module.type_definition.create(common.string_to_pascal_case(name))
-  |> module.type_definition.public()
-  |> module.type_definition.add(
-    module.type_variant.create(common.string_to_pascal_case(name))
-    |> list.fold(fields, _, generate_type_definition_field),
-  )
-}
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                     Table Type `to_json`                                      //
@@ -1747,7 +1676,7 @@ fn generate_nest_field(
           module.root.add,
         )
         |> module.root.add(module.section_comment(name))
-        |> module.root.add(generate_type_definition(field.name, fields))
+        |> module.root.add(type_definition.generate(field.name, fields))
         |> module.root.add(generate_type_decoder(
           config,
           field.name,
@@ -2614,7 +2543,7 @@ fn do_define_normal_table_node(
     |> module.root.add(
       module.section_comment(common.string_to_space_case(name)),
     )
-    |> module.root.add(generate_type_definition(name, fields))
+    |> module.root.add(type_definition.generate(name, fields))
     |> module.root.add(generate_type_decoder(config, name, fields, ""))
     |> module.root.add(generate_type_to_json(config, name, fields, ""))
     |> module.root.add(generate_type_to_surql(name, fields, ""))
@@ -2687,7 +2616,7 @@ fn do_define_relation_table_node(
     |> module.root.add(
       module.section_comment(common.string_to_space_case(name)),
     )
-    |> module.root.add(generate_type_definition(name, fields))
+    |> module.root.add(type_definition.generate(name, fields))
     |> module.root.add(generate_type_decoder(config, name, fields, ""))
     |> module.root.add(generate_type_to_json(config, name, fields, ""))
     |> module.root.add(generate_type_to_surql(name, fields, ""))
@@ -2810,7 +2739,7 @@ fn do_select_node(
             [] -> module
             fields -> {
               module
-              |> module.root.add(generate_type_definition(
+              |> module.root.add(type_definition.generate(
                 common.string_to_pascal_case(field.name),
                 fields,
               ))
@@ -2833,7 +2762,7 @@ fn do_select_node(
       let module =
         module
         |> module.root.add(module.section_comment("Query result"))
-        |> module.root.add(generate_type_definition("QueryResult", fields))
+        |> module.root.add(type_definition.generate("QueryResult", fields))
         |> module.root.add(generate_type_decoder(
           config,
           "QueryResult",

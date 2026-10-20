@@ -1,0 +1,13 @@
+---
+version: 2.0.2
+title: type_definition_generation_with_single_datetime_field
+file: ./test/builder/type_definition_test.gleam
+test_name: type_definition_generation_with_single_datetime_field_test
+---
+import gleam/time/timestamp
+
+pub type User {
+  User(
+    created_at: timestamp.Timestamp,
+  )
+}

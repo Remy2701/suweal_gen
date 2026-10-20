@@ -1,0 +1,11 @@
+---
+version: 2.0.2
+title: type_definition_generation_with_nested_object_field
+file: ./test/builder/type_definition_test.gleam
+test_name: type_definition_generation_with_nested_object_test
+---
+pub type User {
+  User(
+    my_object: MyObject,
+  )
+}
