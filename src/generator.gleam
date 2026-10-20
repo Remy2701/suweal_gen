@@ -66,7 +66,9 @@ fn generate_type_definition_field(
                 "Warning: unsupported object field type for `"
                 <> field.name
                 <> "`: "
-                <> module.to_string(surreal_type.to_gleam_type(field.type_)),
+                <> module.module_node_to_string(surreal_type.to_gleam_type(
+                  field.type_,
+                )),
               )
               module.identifier.create(common.string_to_pascal_case(field.name))
             }
@@ -2007,7 +2009,7 @@ fn resolve_table_fields(
             <> "`: "
             <> string.inspect(
               list.map(types, fn(t) {
-                module.to_string(surreal_type.to_gleam_type(t))
+                module.module_node_to_string(surreal_type.to_gleam_type(t))
               }),
             ),
           )
@@ -2489,6 +2491,7 @@ fn generate_query_builder(
   result_type: String,
   prefix: option.Option(String),
   operation_type: String,
+  only only: Bool,
 ) -> module.Module {
   list.fold(
     parameters,
@@ -2500,14 +2503,20 @@ fn generate_query_builder(
           module.identifier.create("query"),
           module.identifier.create("Query"),
         ))
+        |> module.function_call.add(case only {
+          True -> module.identifier.create(result_type)
+          False ->
+            module.function_call.create(module.identifier.create("List"))
+            |> module.function_call.add(module.identifier.create(result_type))
+        })
         |> module.function_call.add(
-          module.function_call.create(module.identifier.create("List"))
-          |> module.function_call.add(module.identifier.create(result_type)),
-        )
-        |> module.function_call.add(option_module.type_(
-          module.function_call.create(module.identifier.create("List"))
-          |> module.function_call.add(module.identifier.create(result_type)),
-        )),
+          option_module.type_(case only {
+            True -> module.identifier.create(result_type)
+            False ->
+              module.function_call.create(module.identifier.create("List"))
+              |> module.function_call.add(module.identifier.create(result_type))
+          }),
+        ),
       ),
     fn(module, entry) {
       module.function_definition.add_aliased_parameter(
@@ -2543,12 +2552,13 @@ fn generate_query_builder(
       "query",
       module.identifier.create("query_node"),
     )
-    |> module.function_call.add_with_alias(
-      "serializer",
-      offstage_serialize_module.list_of(
-        module.function_call.create(module.identifier.create("serializer")),
-      ),
-    )
+    |> module.function_call.add_with_alias("serializer", case only {
+      True -> module.identifier.create("serializer")
+      False ->
+        offstage_serialize_module.list_of(
+          module.function_call.create(module.identifier.create("serializer")),
+        )
+    })
     |> module.function_call.add_with_alias(
       "parameters",
       module.function_call.create(module.identifier.create("parameters"))
@@ -2691,7 +2701,7 @@ fn do_select_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.Select(fields:, table:, where:, limit:, ..) = node
+  let assert node.Select(only:, fields:, table:, where:, limit:, ..) = node
   use table_info <- result.try(
     dict.get(tables, table)
     |> result.replace_error("Unknown table for select: " <> table),
@@ -2891,6 +2901,7 @@ fn do_select_node(
           "QueryResult",
           option.Some(namespace),
           "Read",
+          only: only,
         ),
       )
     False -> module
@@ -3009,6 +3020,7 @@ fn do_update_node(
           "QueryResult",
           option.Some(namespace),
           "Update",
+          only: False,
         ),
       )
     False -> module
@@ -3118,6 +3130,7 @@ fn do_create_node(
           "QueryResult",
           option.Some(namespace),
           "Create",
+          only: only,
         ),
       )
     False -> module
@@ -3272,6 +3285,7 @@ fn do_delete_node(
               "QueryResult",
               option.Some(namespace),
               "Delete",
+              only: False,
             ),
           )
         False -> module
@@ -3464,6 +3478,7 @@ fn do_relate_node(
           "QueryResult",
           option.Some(namespace),
           "Create",
+          only: False,
         ),
       )
     False -> module
@@ -3631,7 +3646,7 @@ pub fn generate_file(
       |> module.const_definition.public(),
     )
 
-  let content = module.to_string2(module)
+  let content = module.to_string(module)
 
   Ok(content)
 }

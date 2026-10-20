@@ -1,0 +1,151 @@
+---
+version: 2.0.2
+title: SimpleUserTable[backstage = True, service = True]
+file: ./test/sample/simple_user_table_test.gleam
+test_name: simple_user_table_with_backstage_and_service_test
+---
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "user"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                    User                                    //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type User {
+  User(
+    id: identifier.Identifier(User),
+    username: String,
+    email: String,
+    password: String,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(User) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: User) {
+          data.id
+        },
+      )
+      use context, username <- serialize.field(
+        context,
+        "username",
+        serialize.string(),
+        fn(data: User) {
+          data.username
+        },
+      )
+      use context, email <- serialize.field(
+        context,
+        "email",
+        serialize.string(),
+        fn(data: User) {
+          data.email
+        },
+      )
+      use context, password <- serialize.field(
+        context,
+        "password",
+        serialize.string(),
+        fn(data: User) {
+          data.password
+        },
+      )
+      serialize.build(
+        context,
+        User(id: id, username: username, email: email, password: password),
+      )
+    },
+  )
+}
+
+pub fn to_json(self: User) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: User) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("username", surreal_ql.String(self.username)),
+      #("email", surreal_ql.String(self.email)),
+      #("password", surreal_ql.String(self.password)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(User) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: User) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE user TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD username ON user TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD email ON user TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD password ON user TYPE string PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "user",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("username"),
+    table: "user",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("email"),
+    table: "user",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("password"),
+    table: "user",
+    type_: surreal_type.String,
+    default: option.None,
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]

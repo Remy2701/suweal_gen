@@ -1,0 +1,47 @@
+---
+version: 2.0.2
+title: SimpleCreateUser[backstage = False, service = False]
+file: ./test/sample/simple_create_user.gleam
+test_name: simple_create_user_test
+---
+import db/test/simple_user_table
+import suweal/node
+import suweal/surreal_ql
+
+pub type QueryResult = simple_user_table.User
+
+pub const decoder = simple_user_table.decoder
+
+pub const to_json = simple_user_table.to_json
+
+pub fn parameters(username username: String, email email: String) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("username", surreal_ql.String(username)),
+    #("email", surreal_ql.String(email)),
+  ]
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "CREATE user SET username = $username, email = $email;\n"
+
+pub const query_node = [
+  node.Create(
+    only: False,
+    target: "user",
+    set: [
+      node.BinaryOperator(
+        lhs: node.Identifier("username"),
+        operator: node.Equal,
+        rhs: node.Parameter("username"),
+      ),
+      node.BinaryOperator(
+        lhs: node.Identifier("email"),
+        operator: node.Equal,
+        rhs: node.Parameter("email"),
+      ),
+    ],
+  ),
+]

@@ -1,17 +1,30 @@
 import gleam/option
-import gleeunit/should
 import lexer
 import parser
+import positioned
 import suweal/node
 import suweal/surreal_ql
 import suweal/surreal_type
 
 pub fn parse_define_table_test() {
-  let assert Ok(ast) =
-    "DEFINE TABLE user TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;"
-    |> lexer.tokenize("./src/db/test", _)
-    |> should.be_ok()
-    |> parser.parse()
+  let str = "DEFINE TABLE user TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Table,
+      lexer.Identifier("user"),
+      lexer.Type,
+      lexer.Normal,
+      lexer.Schemafull,
+      lexer.Permissions,
+      lexer.None,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
 
   assert ast
     == [
@@ -19,18 +32,34 @@ pub fn parse_define_table_test() {
         name: "user",
         type_: node.NormalTable,
         schema: node.Schemafull,
-        permissions: [],
+        permissions: [node.PermissionNone],
         as_: option.None,
       ),
     ]
 }
 
 pub fn parse_define_string_field_test() {
-  let assert Ok(ast) =
-    "DEFINE FIELD a ON table TYPE string DEFAULT NONE PERMISSIONS FULL;"
-    |> lexer.tokenize("./src/db/test", _)
-    |> should.be_ok()
-    |> parser.parse()
+  let str = "DEFINE FIELD a ON table TYPE string DEFAULT NONE PERMISSIONS FULL;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
 
   assert ast
     == [
@@ -47,11 +76,30 @@ pub fn parse_define_string_field_test() {
 }
 
 pub fn parse_define_optional_string_field_test() {
-  let assert Ok(ast) =
+  let str =
     "DEFINE FIELD a ON table TYPE none | string DEFAULT NONE PERMISSIONS FULL;"
-    |> lexer.tokenize("./src/db/test", _)
-    |> should.be_ok()
-    |> parser.parse()
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("none"),
+      lexer.Pipe,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
 
   assert ast
     == [
@@ -68,11 +116,38 @@ pub fn parse_define_optional_string_field_test() {
 }
 
 pub fn parse_define_string_field_with_assert_test() {
-  let assert Ok(ast) =
+  let str =
     "DEFINE FIELD a ON table TYPE string DEFAULT NONE ASSERT $value INSIDE ['A', 'B', 'C'] PERMISSIONS FULL;"
-    |> lexer.tokenize("./src/db/test", _)
-    |> should.be_ok()
-    |> parser.parse()
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Assert,
+      lexer.Parameter("value"),
+      lexer.Inside,
+      lexer.LeftBracket,
+      lexer.String("A"),
+      lexer.Comma,
+      lexer.String("B"),
+      lexer.Comma,
+      lexer.String("C"),
+      lexer.RightBracket,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
 
   assert ast
     == [
@@ -97,11 +172,42 @@ pub fn parse_define_string_field_with_assert_test() {
 }
 
 pub fn parse_define_string_optional_field_with_assert_test() {
-  let assert Ok(ast) =
+  let str =
     "DEFINE FIELD a ON table TYPE none | string DEFAULT NONE ASSERT $value INSIDE [NONE, 'A', 'B', 'C'] PERMISSIONS FULL;"
-    |> lexer.tokenize("./src/db/test", _)
-    |> should.be_ok()
-    |> parser.parse()
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("none"),
+      lexer.Pipe,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Assert,
+      lexer.Parameter("value"),
+      lexer.Inside,
+      lexer.LeftBracket,
+      lexer.None,
+      lexer.Comma,
+      lexer.String("A"),
+      lexer.Comma,
+      lexer.String("B"),
+      lexer.Comma,
+      lexer.String("C"),
+      lexer.RightBracket,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
 
   assert ast
     == [

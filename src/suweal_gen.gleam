@@ -69,6 +69,105 @@ fn command() {
   )
 }
 
+pub type Error {
+  FailedToTokenize(error: lexer.LexerError, file: File)
+  FailedToParse(error: parser.ParserError, file: File)
+  FailedToExtractTables(error: String, file: File)
+  FailedToGenerate(error: String, file: File)
+}
+
+pub fn render_error(error: Error) -> String {
+  case error {
+    FailedToTokenize(error:, file:) -> lexer.render_error(error, file.content)
+    FailedToParse(error:, file:) -> parser.render_error(error, file.content)
+    FailedToExtractTables(error:, file:) ->
+      "Failed to extract tables in " <> file.path <> ": " <> error
+    FailedToGenerate(error:, file:) ->
+      "Failed to generate file " <> file.path <> ": " <> error
+  }
+}
+
+pub type File {
+  File(path: String, content: String)
+}
+
+pub fn generate_file(
+  config: common.Configuration,
+  content: String,
+  path: String,
+) {
+  use tokens <- result.try(
+    lexer.tokenize(path, content)
+    |> result.map_error(FailedToTokenize(_, File(path: path, content: content))),
+  )
+
+  use ast <- result.try(
+    parser.parse(tokens)
+    |> result.map_error(FailedToParse(_, File(path: path, content: content))),
+  )
+
+  use tables <- result.try(
+    extractor.extract_tables(content, ast)
+    |> result.map_error(FailedToExtractTables(
+      _,
+      File(path: path, content: content),
+    )),
+  )
+
+  use content <- result.try(
+    generator.generate_file(config, content, ast, tables)
+    |> result.map_error(FailedToGenerate(_, File(path: path, content: content))),
+  )
+
+  Ok(content)
+}
+
+pub fn generate_files(config: common.Configuration, files: List(File)) {
+  use tokens <- result.try(
+    files
+    |> list.try_map(fn(entry) {
+      lexer.tokenize(entry.path, entry.content)
+      |> result.map_error(FailedToTokenize(_, entry))
+    }),
+  )
+
+  use nodes <- result.try(
+    list.zip(files, tokens)
+    |> list.try_map(fn(entry) {
+      let #(file, tokens) = entry
+      parser.parse(tokens)
+      |> result.map_error(FailedToParse(_, file))
+    }),
+  )
+
+  use tables <- result.try(
+    list.zip(files, nodes)
+    |> list.try_map(fn(entry) {
+      extractor.extract_tables(entry.0.path, entry.1)
+      |> result.map_error(FailedToExtractTables(_, entry.0))
+    }),
+  )
+
+  let tables =
+    list.fold(tables, dict.new(), fn(acc, table) { dict.merge(acc, table) })
+    |> extractor.complete_fields_dependencies()
+    |> generator.process_delegated_table
+
+  use result <- result.try(
+    list.zip(files, nodes)
+    |> list.try_map(fn(entry) {
+      let #(file, ast) = entry
+      use content <- result.try(
+        generator.generate_file(config, file.content, ast, tables)
+        |> result.map_error(FailedToGenerate(_, file)),
+      )
+      Ok(File(path: file.path <> ".gleam", content: content))
+    }),
+  )
+
+  Ok(result)
+}
+
 pub fn main() -> Nil {
   // Parse the arguments
   let assert Ok(config) =
@@ -79,55 +178,24 @@ pub fn main() -> Nil {
   let assert Ok(files) = list_files(config.path, [])
 
   // Read all *.surql files
-  let assert Ok(content) =
-    list.try_map(files, fn(file) { simplifile.read(file <> ".surql") })
-
-  // Tokenize the content of the files
-  let assert Ok(tokens) =
-    list.zip(files, content)
-    |> list.try_map(fn(entry) {
-      let #(file, content) = entry
-      lexer.tokenize(file, content)
-      |> result.map_error(lexer.render_error(_, content))
+  let assert Ok(files) =
+    list.try_map(files, fn(file) {
+      use content <- result.try(simplifile.read(file <> ".surql"))
+      Ok(File(path: file, content: content))
     })
+
+  let assert Ok(files) =
+    generate_files(config, files)
+    |> result.map_error(render_error)
     |> result.map_error(io.println)
-
-  // Parse the tokens into AST nodes
-  let assert Ok(nodes) =
-    list.zip(tokens, content)
-    |> list.try_map(fn(entry) {
-      let #(tokens, content) = entry
-      parser.parse(tokens)
-      |> result.map_error(parser.render_error(_, content))
-    })
-    |> result.map_error(io.println)
-
-  // Extract tables from the AST nodes
-  let assert Ok(tables) =
-    list.zip(files, nodes)
-    |> list.try_map(fn(entry) { extractor.extract_tables(entry.0, entry.1) })
-
-  // Complete table extraction
-  let tables =
-    list.fold(tables, dict.new(), fn(acc, table) { dict.merge(acc, table) })
-    |> extractor.complete_fields_dependencies()
-    |> generator.process_delegated_table
 
   // Generate the output files
   let assert Ok(_) =
-    list.zip(files, content)
-    |> list.zip(nodes)
-    |> list.try_each(fn(entry) {
-      let #(#(file, raw), ast) = entry
-      use content <- result.try(generator.generate_file(
-        config,
-        raw,
-        ast,
-        tables,
-      ))
+    files
+    |> list.try_each(fn(file) {
       use _ <- result.try(
-        simplifile.write(file <> ".gleam", content)
-        |> result.map_error(fn(_) { "Failed to write file: " <> file }),
+        simplifile.write(file.path, file.content)
+        |> result.map_error(fn(_) { "Failed to write file: " <> file.path }),
       )
       Ok(Nil)
     })

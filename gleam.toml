@@ -12,7 +12,8 @@ argv = ">= 1.1.0 and < 2.0.0"
 shellout = ">= 1.8.0 and < 2.0.0"
 clip = ">= 1.2.2 and < 2.0.0"
 suweal = ">= 0.4.0 and < 1.0.0"
-omcg = ">= 0.2.0 and < 1.0.0"
+omcg = ">= 0.3.1 and < 1.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
+birdie = ">= 2.0.2 and < 3.0.0"

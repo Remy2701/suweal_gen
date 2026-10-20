@@ -75,3 +75,7 @@ pub fn render(self: Positioned(a), content: String) -> String {
 pub fn map(self: Positioned(a), transform: fn(a) -> b) -> Positioned(b) {
   Positioned(..self, value: transform(self.value))
 }
+
+pub fn unpositioned(positioned: List(Positioned(a))) -> List(a) {
+  list.map(positioned, fn(p) { p.value })
+}
