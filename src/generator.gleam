@@ -11,6 +11,7 @@ import gleam/result
 import gleam/set
 import gleam/string
 import internal/builder/enum_definition
+import internal/builder/enum_to_string
 import internal/builder/type_definition
 import omcg/decode_module
 import omcg/module
@@ -333,37 +334,6 @@ fn generate_gleam_type_to_json(
     ),
   )
   |> module.add_import(["gleam", "json"])
-}
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                       Enum `to_string`                                        //
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-
-fn generate_enum_to_string(
-  name: String,
-  values: List(String),
-) -> module.Module {
-  module.function_definition.create()
-  |> module.function_definition.with_name(name <> "_to_string")
-  |> module.function_definition.public()
-  |> module.function_definition.add_aliased_parameter(
-    "value",
-    "value",
-    module_common.type_identifier(name),
-  )
-  |> module.function_definition.with_return_type(module.types.string())
-  |> module.function_definition.add(
-    module.identifier.create("value")
-    |> module.case_expression.create()
-    |> list.fold(values, _, fn(module, value) {
-      module.case_expression.add(
-        module,
-        module.identifier.create(common.string_to_pascal_case(value))
-          |> module.case_branch.create()
-          |> module.case_branch.add(module.literal.string(value)),
-      )
-    }),
-  )
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -2515,7 +2485,7 @@ fn do_define_normal_table_node(
       let #(enum_name, values) = entry
       module
       |> module.root.add(enum_definition.generate(enum_name, values))
-      |> module.root.add(generate_enum_to_string(enum_name, values))
+      |> module.root.add(enum_to_string.generate(enum_name, values))
       |> module.root.add(generate_enum_to_decoder(config, enum_name, values))
     })
 
@@ -2587,7 +2557,7 @@ fn do_define_relation_table_node(
       let #(enum_name, values) = entry
       module
       |> module.root.add(enum_definition.generate(enum_name, values))
-      |> module.root.add(generate_enum_to_string(enum_name, values))
+      |> module.root.add(enum_to_string.generate(enum_name, values))
       |> module.root.add(generate_enum_to_decoder(config, enum_name, values))
     })
 

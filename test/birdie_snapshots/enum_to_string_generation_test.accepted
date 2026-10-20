@@ -1,0 +1,13 @@
+---
+version: 2.0.2
+title: enum_to_string_generation_test
+file: ./test/builder/enum_to_string_test.gleam
+test_name: enum_to_string_generation_test
+---
+pub fn color_to_string(value value: Color) -> String {
+  case value {
+    Red -> "red"
+    Green -> "green"
+    Blue -> "blue"
+  }
+}
