@@ -1,0 +1,17 @@
+---
+version: 2.0.2
+title: enum_decoder_generation_test
+file: ./test/builder/enum_decoder_test.gleam
+test_name: enum_decoder_generation_test
+---
+import gleam/dynamic/decode
+
+pub fn color_decoder() -> decode.Decoder(Color) {
+  use value <- decode.then(decode.string)
+  case value {
+    "red" -> decode.success(Red)
+    "green" -> decode.success(Green)
+    "blue" -> decode.success(Blue)
+    _ -> decode.failure(Red, "Unknown value " <> value)
+  }
+}
