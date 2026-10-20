@@ -1,0 +1,11 @@
+---
+version: 2.0.2
+title: enum_definition_generation_test
+file: ./test/builder/enum_definition_test.gleam
+test_name: enum_definition_generation_test
+---
+pub type Color {
+  Red
+  Green
+  Blue
+}

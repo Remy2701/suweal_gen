@@ -10,6 +10,7 @@ import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
+import internal/builder/enum_definition
 import internal/builder/type_definition
 import omcg/decode_module
 import omcg/module
@@ -332,24 +333,6 @@ fn generate_gleam_type_to_json(
     ),
   )
   |> module.add_import(["gleam", "json"])
-}
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                        Enum Definition                                        //
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-
-fn generate_enum_definition(
-  name: String,
-  values: List(String),
-) -> module.Module {
-  module.type_definition.create(common.string_to_pascal_case(name))
-  |> module.type_definition.public()
-  |> list.fold(values, _, fn(type_def, value) {
-    module.type_definition.add(
-      type_def,
-      module.type_variant.create(common.string_to_pascal_case(value)),
-    )
-  })
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -2531,7 +2514,7 @@ fn do_define_normal_table_node(
     |> list.fold(info.enums, _, fn(module, entry) {
       let #(enum_name, values) = entry
       module
-      |> module.root.add(generate_enum_definition(enum_name, values))
+      |> module.root.add(enum_definition.generate(enum_name, values))
       |> module.root.add(generate_enum_to_string(enum_name, values))
       |> module.root.add(generate_enum_to_decoder(config, enum_name, values))
     })
@@ -2603,7 +2586,7 @@ fn do_define_relation_table_node(
     list.fold(info.enums, module, fn(module, entry) {
       let #(enum_name, values) = entry
       module
-      |> module.root.add(generate_enum_definition(enum_name, values))
+      |> module.root.add(enum_definition.generate(enum_name, values))
       |> module.root.add(generate_enum_to_string(enum_name, values))
       |> module.root.add(generate_enum_to_decoder(config, enum_name, values))
     })
