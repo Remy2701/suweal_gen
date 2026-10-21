@@ -1,0 +1,140 @@
+---
+version: 2.0.2
+title: TableWithEnum[offstage = False, service = False]
+---
+import gleam/dynamic/decode
+import gleam/json
+import gleam/option
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "post"
+
+pub type Status {
+  Draft
+  Processing
+  Published
+}
+
+pub fn status_to_string(value value: Status) -> String {
+  case value {
+    Draft -> "draft"
+    Processing -> "processing"
+    Published -> "published"
+  }
+}
+
+pub fn status_decoder() -> decode.Decoder(Status) {
+  use value <- decode.then(decode.string)
+  case value {
+    "draft" -> decode.success(Draft)
+    "processing" -> decode.success(Processing)
+    "published" -> decode.success(Published)
+    _ -> decode.failure(Draft, "Unknown value " <> value)
+  }
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                    Post                                    //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type Post {
+  Post(
+    id: identifier.Identifier(Post),
+    title: String,
+    status: Status,
+  )
+}
+
+pub fn decoder() -> decode.Decoder(Post) {
+  use status <- decode.field("status", status_decoder())
+  use title <- decode.field("title", decode.string)
+  use id <- decode.field("id", identifier.typed_decoder([table_name]))
+  decode.success(Post(id, title, status))
+}
+
+pub fn to_json(self: Post) -> json.Json {
+  json.object(
+    [
+      #("id", self.id |> identifier.to_string |> json.string),
+      #("title", json.string(self.title)),
+      #("status", json.string(status_to_string(self.status))),
+    ],
+  )
+}
+
+pub fn to_surql(self: Post) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("title", surreal_ql.String(self.title)),
+      #("status", surreal_ql.String(status_to_string(self.status))),
+    ],
+  )
+}
+
+pub fn specs() -> table_spec.GleamTableSpec(Post) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: Post) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: decoder,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE post TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD title ON post TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD status ON post TYPE string DEFAULT NONE ASSERT $value INSIDE ['draft', 'processing', 'published'] PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "post",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("title"),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("status"),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.Some(
+      node.BinaryOperator(
+        lhs: node.Parameter("value"),
+        operator: node.Inside,
+        rhs: node.Array(
+          [
+            node.Value(surreal_ql.String("draft")),
+            node.Value(surreal_ql.String("processing")),
+            node.Value(surreal_ql.String("published")),
+          ],
+        ),
+      ),
+    ),
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]

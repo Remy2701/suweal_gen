@@ -1,0 +1,156 @@
+---
+version: 2.0.2
+title: TableWithEnum[offstage = True, service = False]
+---
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "post"
+
+pub type Status {
+  Draft
+  Processing
+  Published
+}
+
+pub fn status_to_string(value value: Status) -> String {
+  case value {
+    Draft -> "draft"
+    Processing -> "processing"
+    Published -> "published"
+  }
+}
+
+pub fn status_serializer() -> serialize.Serializer(Status) {
+  serialize.string_enum([Draft, Processing, Published], status_to_string)
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                    Post                                    //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type Post {
+  Post(
+    id: identifier.Identifier(Post),
+    title: String,
+    status: Status,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(Post) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: Post) {
+          data.id
+        },
+      )
+      use context, title <- serialize.field(
+        context,
+        "title",
+        serialize.string(),
+        fn(data: Post) {
+          data.title
+        },
+      )
+      use context, status <- serialize.field(
+        context,
+        "status",
+        status_serializer(),
+        fn(data: Post) {
+          data.status
+        },
+      )
+      serialize.build(context, Post(id: id, title: title, status: status))
+    },
+  )
+}
+
+pub fn to_json(self: Post) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: Post) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("title", surreal_ql.String(self.title)),
+      #("status", surreal_ql.String(status_to_string(self.status))),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(Post) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: Post) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE post TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD title ON post TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD status ON post TYPE string DEFAULT NONE ASSERT $value INSIDE ['draft', 'processing', 'published'] PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "post",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("title"),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("status"),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.Some(
+      node.BinaryOperator(
+        lhs: node.Parameter("value"),
+        operator: node.Inside,
+        rhs: node.Array(
+          [
+            node.Value(surreal_ql.String("draft")),
+            node.Value(surreal_ql.String("processing")),
+            node.Value(surreal_ql.String("published")),
+          ],
+        ),
+      ),
+    ),
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
