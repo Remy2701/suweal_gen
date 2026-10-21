@@ -20,6 +20,7 @@ import internal/builder/type_decoder
 import internal/builder/type_definition
 import internal/builder/type_to_json
 import internal/builder/type_to_surql
+import omcg/id_case
 import omcg/module
 import omcg/module_common
 import suweal/node
@@ -42,7 +43,7 @@ fn retrieve_dependencies_(
         |> case
           dict.get(
             tables,
-            common.string_to_snake_case(common.without_namespace(name)),
+            id_case.string_to_snake_case(id_case.without_namespace(name)),
           )
         {
           Ok(info) -> set.insert(_, info.path |> string.remove_prefix("./src/"))
@@ -54,7 +55,7 @@ fn retrieve_dependencies_(
         |> case
           dict.get(
             tables,
-            common.string_to_snake_case(common.without_namespace(name)),
+            id_case.string_to_snake_case(id_case.without_namespace(name)),
           )
         {
           Ok(info) -> set.insert(_, info.path |> string.remove_prefix("./src/"))
@@ -91,7 +92,7 @@ fn retrieve_dependencies(
         |> case
           dict.get(
             tables,
-            common.string_to_snake_case(common.without_namespace(name)),
+            id_case.string_to_snake_case(id_case.without_namespace(name)),
           )
         {
           Ok(info) -> module.add_import(
@@ -106,7 +107,7 @@ fn retrieve_dependencies(
         |> case
           dict.get(
             tables,
-            common.string_to_snake_case(common.without_namespace(name)),
+            id_case.string_to_snake_case(id_case.without_namespace(name)),
           )
         {
           Ok(info) -> module.add_import(
@@ -170,7 +171,7 @@ fn resolve_dependencies(
                   |> list.last()
                   |> result.unwrap("??")
                   <> "."
-                  <> common.string_to_pascal_case(name),
+                  <> id_case.string_to_pascal_case(name),
                 )
               _ -> field.type_
             }),
@@ -201,7 +202,7 @@ fn resolve_dependencies(
                   |> list.last()
                   |> result.unwrap("??")
                   <> "."
-                  <> common.string_to_pascal_case(name),
+                  <> id_case.string_to_pascal_case(name),
                 ))
               _ -> field.type_
             }),
@@ -232,7 +233,7 @@ fn resolve_dependencies(
                   |> list.last()
                   |> result.unwrap("??")
                   <> "."
-                  <> common.string_to_pascal_case(name),
+                  <> id_case.string_to_pascal_case(name),
                 ))
               _ -> field.type_
             }),
@@ -281,17 +282,19 @@ fn link_type(
         | surreal_type.None -> field.type_
         surreal_type.Identifier(inner) ->
           surreal_type.Identifier(
-            common.namespace_of(current.path)
+            id_case.namespace_of(current.path)
             <> "."
-            <> common.string_to_pascal_case(inner),
+            <> id_case.string_to_pascal_case(inner),
           )
         surreal_type.Record(inner) ->
-          case common.compare(current.name, common.identify_case(inner), True) {
+          case
+            id_case.compare(current.name, id_case.identify_case(inner), True)
+          {
             order.Eq ->
               surreal_type.Record(
-                common.namespace_of(current.path)
+                id_case.namespace_of(current.path)
                 <> "."
-                <> common.string_to_pascal_case(inner),
+                <> id_case.string_to_pascal_case(inner),
               )
             _ -> {
               let current = dict.get(tables, string.lowercase(inner))
@@ -299,9 +302,9 @@ fn link_type(
               case current {
                 Ok(current) ->
                   surreal_type.Record(
-                    common.namespace_of(current.path)
+                    id_case.namespace_of(current.path)
                     <> "."
-                    <> common.string_to_pascal_case(inner),
+                    <> id_case.string_to_pascal_case(inner),
                   )
                 _ -> {
                   io.println(
@@ -319,7 +322,7 @@ fn link_type(
       },
       linked_enum: option.map(field.linked_enum, fn(enum) {
         case string.contains(enum, ".") {
-          False -> common.namespace_of(current.path) <> "." <> enum
+          False -> id_case.namespace_of(current.path) <> "." <> enum
           True -> enum
         }
       }),
@@ -327,15 +330,15 @@ fn link_type(
     ),
     dependencies: case field.type_ {
       surreal_type.Identifier(inner) ->
-        case common.compare(current.name, common.identify_case(inner), True) {
-          order.Eq -> set.from_list([common.to_gleam_path(current.path)])
+        case id_case.compare(current.name, id_case.identify_case(inner), True) {
+          order.Eq -> set.from_list([id_case.to_gleam_path(current.path)])
           _ -> {
             let current = dict.get(tables, string.lowercase(inner))
 
             case current {
               Ok(current) ->
                 set.from_list([
-                  common.to_gleam_path(current.path),
+                  id_case.to_gleam_path(current.path),
                 ])
               _ -> {
                 io.println("Warning: Could not resolve table `" <> inner <> "`")
@@ -345,15 +348,15 @@ fn link_type(
           }
         }
       surreal_type.Record(inner) ->
-        case common.compare(current.name, common.identify_case(inner), True) {
-          order.Eq -> set.from_list([common.to_gleam_path(current.path)])
+        case id_case.compare(current.name, id_case.identify_case(inner), True) {
+          order.Eq -> set.from_list([id_case.to_gleam_path(current.path)])
           _ -> {
             let current = dict.get(tables, string.lowercase(inner))
 
             case current {
               Ok(current) ->
                 set.from_list([
-                  common.to_gleam_path(current.path),
+                  id_case.to_gleam_path(current.path),
                   "suweal/record",
                 ])
               _ -> {
@@ -396,7 +399,7 @@ fn generate_nest_field(
   case field.object_fields {
     [] -> Error(Nil)
     fields -> {
-      let name = common.string_to_space_case(field.name)
+      let name = id_case.string_to_space_case(field.name)
       let module =
         module.root.create()
         |> list.fold(
@@ -449,7 +452,7 @@ fn resolve_table_fields(
         field: extractor.TableField(
           dependencies: [],
           name: "self",
-          type_: surreal_type.Record(common.to_pascal_case(current.name).value),
+          type_: surreal_type.Record(id_case.to_pascal_case(current.name).value),
           linked_enum: option.None,
           object_fields: [],
         ),
@@ -509,9 +512,9 @@ fn resolve_table_fields(
                       dependencies: [],
                       name: relation,
                       type_: surreal_type.Array(surreal_type.Record(
-                        common.namespace_of(table.path)
+                        id_case.namespace_of(table.path)
                         <> "."
-                        <> common.to_pascal_case(table.name).value,
+                        <> id_case.to_pascal_case(table.name).value,
                       )),
                       linked_enum: option.None,
                       object_fields: [],
@@ -539,7 +542,7 @@ fn resolve_table_fields(
             surreal_type.Array(surreal_type.Record(inner)) -> {
               use table <- result.try(dict.get(
                 tables,
-                common.without_namespace(inner),
+                id_case.without_namespace(inner),
               ))
 
               resolve_table_fields(tables, table, rhs)
@@ -557,7 +560,7 @@ fn resolve_table_fields(
             surreal_type.Option(surreal_type.Record(inner)) -> {
               use table <- result.try(dict.get(
                 tables,
-                common.without_namespace(inner),
+                id_case.without_namespace(inner),
               ))
 
               resolve_table_fields(tables, table, rhs)
@@ -575,7 +578,7 @@ fn resolve_table_fields(
             surreal_type.Record(inner) -> {
               use table <- result.try(dict.get(
                 tables,
-                common.string_to_snake_case(common.without_namespace(inner)),
+                id_case.string_to_snake_case(id_case.without_namespace(inner)),
               ))
 
               resolve_table_fields(tables, table, rhs)
@@ -818,9 +821,9 @@ fn extract_parameters(
                     ParameterProperty(
                       name: name,
                       type_: surreal_type.Identifier(
-                        common.namespace_of(info.path)
+                        id_case.namespace_of(info.path)
                         <> "."
-                        <> common.string_to_pascal_case(record_name),
+                        <> id_case.string_to_pascal_case(record_name),
                       ),
                       linked_enum: option.None,
                       dependencies: [],
@@ -842,7 +845,7 @@ fn extract_parameters(
                   linked_enum: option.map(f.linked_enum, fn(enum) {
                     case string.contains(enum, ".") {
                       False ->
-                        namespace <> "." <> common.string_to_pascal_case(enum)
+                        namespace <> "." <> id_case.string_to_pascal_case(enum)
                       True -> enum
                     }
                   }),
@@ -856,7 +859,7 @@ fn extract_parameters(
                   linked_enum: option.map(f.linked_enum, fn(enum) {
                     case string.contains(enum, ".") {
                       False ->
-                        namespace <> "." <> common.string_to_pascal_case(enum)
+                        namespace <> "." <> id_case.string_to_pascal_case(enum)
                       True -> enum
                     }
                   }),
@@ -873,7 +876,9 @@ fn extract_parameters(
                     [] -> option.None
                     _ ->
                       option.Some(
-                        namespace <> "." <> common.string_to_pascal_case(f.name),
+                        namespace
+                        <> "."
+                        <> id_case.string_to_pascal_case(f.name),
                       )
                   },
                 )
@@ -999,7 +1004,7 @@ fn do_define_normal_table_node(
   let module =
     module
     |> module.root.add(
-      module.section_comment(common.string_to_space_case(name)),
+      module.section_comment(id_case.string_to_space_case(name)),
     )
     |> module.root.add(type_definition.generate(name, fields))
     |> module.root.add(type_decoder.generate(config, name, fields, ""))
@@ -1076,7 +1081,7 @@ fn do_define_relation_table_node(
   let module =
     module
     |> module.root.add(
-      module.section_comment(common.string_to_space_case(name)),
+      module.section_comment(id_case.string_to_space_case(name)),
     )
     |> module.root.add(type_definition.generate(name, fields))
     |> module.root.add(type_decoder.generate(config, name, fields, ""))
@@ -1117,7 +1122,7 @@ fn do_select_node(
             "QueryResult",
             module.binop.access(
               module.identifier.create(namespace),
-              module.identifier.create(common.string_to_pascal_case(table)),
+              module.identifier.create(id_case.string_to_pascal_case(table)),
             ),
           )
           |> module.const_definition.public()
@@ -1206,12 +1211,12 @@ fn do_select_node(
             fields -> {
               module
               |> module.root.add(type_definition.generate(
-                common.string_to_pascal_case(field.name),
+                id_case.string_to_pascal_case(field.name),
                 fields,
               ))
               |> module.root.add(type_decoder.generate(
                 config,
-                common.string_to_pascal_case(field.name),
+                id_case.string_to_pascal_case(field.name),
                 fields,
                 "",
               ))
@@ -1642,9 +1647,9 @@ fn do_delete_node(
                     extractor.TableField(
                       ..f,
                       type_: surreal_type.Identifier(
-                        common.namespace_of(info.path)
+                        id_case.namespace_of(info.path)
                         <> "."
-                        <> common.to_pascal_case(info.name).value,
+                        <> id_case.to_pascal_case(info.name).value,
                       ),
                     )
                   })
@@ -1798,9 +1803,9 @@ fn do_relate_node(
                 extractor.TableField(
                   ..f,
                   type_: surreal_type.Record(
-                    common.namespace_of(info.path)
+                    id_case.namespace_of(info.path)
                     <> "."
-                    <> common.to_pascal_case(info.name).value,
+                    <> id_case.to_pascal_case(info.name).value,
                   ),
                 )
               })
@@ -1833,9 +1838,9 @@ fn do_relate_node(
                 extractor.TableField(
                   ..f,
                   type_: surreal_type.Record(
-                    common.namespace_of(info.path)
+                    id_case.namespace_of(info.path)
                     <> "."
-                    <> common.to_pascal_case(info.name).value,
+                    <> id_case.to_pascal_case(info.name).value,
                   ),
                 )
               })

@@ -2,6 +2,7 @@ import common
 import gleam/list
 import gleam/option
 import gleam/string
+import omcg/id_case
 import omcg/module
 import suweal/surreal_type
 
@@ -39,7 +40,7 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
               case list.reverse(string.split(nested, ".")) {
                 [last, ..rest] ->
                   string.join(
-                    list.reverse([common.string_to_pascal_case(last), ..rest]),
+                    list.reverse([id_case.string_to_pascal_case(last), ..rest]),
                     ".",
                   )
                 [] -> ""
@@ -62,7 +63,7 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
               module.identifier.create(
                 string.join(
                   string.split(nested, ".")
-                    |> list.map(common.string_to_snake_case),
+                    |> list.map(id_case.string_to_snake_case),
                   ".",
                 )
                 <> "_to_surql",

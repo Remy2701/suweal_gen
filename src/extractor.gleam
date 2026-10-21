@@ -1,4 +1,3 @@
-import common
 import gleam/dict
 import gleam/function
 import gleam/io
@@ -7,6 +6,7 @@ import gleam/option
 import gleam/result
 import gleam/set
 import gleam/string
+import omcg/id_case
 import suweal/node
 import suweal/surreal_ql
 import suweal/surreal_type
@@ -46,7 +46,7 @@ fn merge_fields(a: List(TableField), b: List(TableField)) {
 
 pub type TableInfo {
   TableInfo(
-    name: common.IdentifierCase,
+    name: id_case.IdentifierCase,
     path: String,
     fields: List(TableField),
     enums: List(#(String, List(String))),
@@ -130,7 +130,7 @@ fn extract_normal_table(
       state.tables,
       name,
       TableInfo(
-        name: common.identify_case(name),
+        name: id_case.identify_case(name),
         path: path,
         fields: case as_ {
           option.None -> [
@@ -139,7 +139,7 @@ fn extract_normal_table(
                 string.remove_prefix(path, "./src/"),
               ],
               name: "id",
-              type_: surreal_type.Identifier(common.string_to_pascal_case(name)),
+              type_: surreal_type.Identifier(id_case.string_to_pascal_case(name)),
               linked_enum: option.None,
               object_fields: [],
             ),
@@ -164,7 +164,7 @@ fn extract_relation_table(
       state.tables,
       name,
       TableInfo(
-        name: common.identify_case(name),
+        name: id_case.identify_case(name),
         path: path,
         fields: [
           TableField(
@@ -172,7 +172,7 @@ fn extract_relation_table(
               string.remove_prefix(path, "./src/"),
             ],
             name: "id",
-            type_: surreal_type.Identifier(common.string_to_pascal_case(name)),
+            type_: surreal_type.Identifier(id_case.string_to_pascal_case(name)),
             linked_enum: option.None,
             object_fields: [],
           ),

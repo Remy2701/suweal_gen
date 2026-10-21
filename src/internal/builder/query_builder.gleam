@@ -2,6 +2,7 @@ import common
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
+import omcg/id_case
 import omcg/module
 import omcg/offstage_serialize_module
 import omcg/option_module
@@ -54,7 +55,7 @@ pub fn generate(
               case list.reverse(string.split(nested, ".")) {
                 [last, ..rest] ->
                   string.join(
-                    list.reverse([common.string_to_pascal_case(last), ..rest]),
+                    list.reverse([id_case.string_to_pascal_case(last), ..rest]),
                     ".",
                   )
                 [] -> ""
