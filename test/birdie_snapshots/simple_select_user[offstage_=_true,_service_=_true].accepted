@@ -1,0 +1,53 @@
+---
+version: 2.0.2
+title: SimpleSelectUser[offstage = True, service = True]
+file: ./test/sample/simple_select_user.gleam
+test_name: simple_select_user_with_service_test
+---
+import db/test/simple_user_table
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                Query result                                //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type QueryResult = simple_user_table.User
+
+pub const to_json = simple_user_table.to_json
+
+pub const serializer = simple_user_table.serializer
+
+pub fn query() -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: simple_user_table.table_name,
+    operation_type: suweal_service.Read,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "SELECT * FROM user;\n"
+
+pub const query_node = [
+  node.Select(
+    fields: [
+      node.SelectField(field: node.All, alias: option.None, value: False),
+    ],
+    only: False,
+    table: "user",
+    where: option.None,
+    order: option.None,
+    limit: option.None,
+    group_all: False,
+  ),
+]
