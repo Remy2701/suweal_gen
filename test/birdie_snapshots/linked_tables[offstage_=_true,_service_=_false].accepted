@@ -1,0 +1,262 @@
+---
+version: 2.0.2
+title: LinkedTables[offstage = True, service = False]
+file: ./test/sample/linked_tables.gleam
+test_name: linked_tables_with_offstage_test
+---
+// [./src/db/test/linked_table_a.gleam]
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "a"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                     A                                      //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type A {
+  A(
+    id: identifier.Identifier(A),
+    a0: String,
+    a1: Int,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(A) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: A) {
+          data.id
+        },
+      )
+      use context, a0 <- serialize.field(
+        context,
+        "a0",
+        serialize.string(),
+        fn(data: A) {
+          data.a0
+        },
+      )
+      use context, a1 <- serialize.field(
+        context,
+        "a1",
+        serialize.int(),
+        fn(data: A) {
+          data.a1
+        },
+      )
+      serialize.build(context, A(id: id, a0: a0, a1: a1))
+    },
+  )
+}
+
+pub fn to_json(self: A) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: A) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("a0", surreal_ql.String(self.a0)),
+      #("a1", surreal_ql.Int(self.a1)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(A) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: A) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE a TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD a0 ON a TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD a1 ON a TYPE int DEFAULT NONE PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "a",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("a0"),
+    table: "a",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("a1"),
+    table: "a",
+    type_: surreal_type.Int,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
+
+// [./src/db/test/linked_table_b.gleam]
+import db/test/linked_table_a
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/record as os_record
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/record
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "b"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                     B                                      //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type B {
+  B(
+    id: identifier.Identifier(B),
+    b0: record.Record(linked_table_a.A),
+    b1: Int,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(B) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: B) {
+          data.id
+        },
+      )
+      use context, b0 <- serialize.field(
+        context,
+        "b0",
+        os_record.typed_serializer(
+          linked_table_a.serializer(),
+          fn(data) {
+            data.id
+          },
+          [linked_table_a.table_name],
+        ),
+        fn(data: B) {
+          data.b0
+        },
+      )
+      use context, b1 <- serialize.field(
+        context,
+        "b1",
+        serialize.int(),
+        fn(data: B) {
+          data.b1
+        },
+      )
+      serialize.build(context, B(id: id, b0: b0, b1: b1))
+    },
+  )
+}
+
+pub fn to_json(self: B) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: B) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("b0", self.b0 |> record.to_surql(linked_table_a.to_surql)),
+      #("b1", surreal_ql.Int(self.b1)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(B) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: B) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE b TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD b0 ON b TYPE record<a> DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD b1 ON b TYPE int DEFAULT NONE PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "b",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("b0"),
+    table: "b",
+    type_: surreal_type.Record("a"),
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("b1"),
+    table: "b",
+    type_: surreal_type.Int,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
