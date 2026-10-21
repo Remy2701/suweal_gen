@@ -1,0 +1,93 @@
+---
+version: 2.0.2
+title: SimpleSelectFieldsUser[offstage = True, service = True]
+file: ./test/sample/simple_fields_select_user.gleam
+test_name: simple_select_fields_user_with_service_test
+---
+import db/test/simple_user_table
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                Query result                                //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type QueryResult {
+  QueryResult(
+    username: String,
+    email: String,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(QueryResult) {
+  serialize.object(
+    fn(context) {
+      use context, username <- serialize.field(
+        context,
+        "username",
+        serialize.string(),
+        fn(data: QueryResult) {
+          data.username
+        },
+      )
+      use context, email <- serialize.field(
+        context,
+        "email",
+        serialize.string(),
+        fn(data: QueryResult) {
+          data.email
+        },
+      )
+      serialize.build(context, QueryResult(username: username, email: email))
+    },
+  )
+}
+
+pub fn to_json(self: QueryResult) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn query() -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: simple_user_table.table_name,
+    operation_type: suweal_service.Read,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "SELECT username, email FROM user;\n"
+
+pub const query_node = [
+  node.Select(
+    fields: [
+      node.SelectField(
+        field: node.Identifier("username"),
+        alias: option.None,
+        value: False,
+      ),
+      node.SelectField(
+        field: node.Identifier("email"),
+        alias: option.None,
+        value: False,
+      ),
+    ],
+    only: False,
+    table: "user",
+    where: option.None,
+    order: option.None,
+    limit: option.None,
+    group_all: False,
+  ),
+]
