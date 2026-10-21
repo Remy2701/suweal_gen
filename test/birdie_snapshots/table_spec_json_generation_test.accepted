@@ -1,0 +1,21 @@
+---
+version: 2.0.2
+title: table_spec_json_generation_test
+file: ./test/builder/table_spec_test.gleam
+test_name: table_spec_generation_test
+---
+import suweal/table_spec
+
+pub fn specs() -> table_spec.GleamTableSpec(User) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: User) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: decoder,
+  )
+}
