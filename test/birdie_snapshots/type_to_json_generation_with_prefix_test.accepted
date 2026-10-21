@@ -1,0 +1,17 @@
+---
+version: 2.0.2
+title: type_to_json_generation_with_prefix_test
+file: ./test/builder/type_to_json_test.gleam
+test_name: type_to_json_generation_with_prefix_test
+---
+import gleam/json
+
+pub fn nested_to_json(self: Nested) -> json.Json {
+  json.object(
+    [
+      #("s", json.string(self.s)),
+      #("i", json.int(self.i)),
+      #("f", json.float(self.f)),
+    ],
+  )
+}

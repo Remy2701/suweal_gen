@@ -1,0 +1,45 @@
+---
+version: 2.0.2
+title: type_to_surql_generation_test
+---
+import gleam/time/calendar
+import gleam/time/timestamp
+import suweal/surreal_ql
+
+pub fn to_surql(self: User) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("s", surreal_ql.String(self.s)),
+      #("i", surreal_ql.Int(self.i)),
+      #("f", surreal_ql.Float(self.f)),
+      #("b", surreal_ql.Bool(self.b)),
+      #(
+        "a",
+        surreal_ql.array(
+          self.a,
+          fn(value) {
+            surreal_ql.String(value)
+          },
+        ),
+      ),
+      #(
+        "d",
+        surreal_ql.Datetime(timestamp.to_rfc3339(self.d, calendar.utc_offset)),
+      ),
+      #(
+        "o",
+        surreal_ql.nullable(
+          self.o,
+          fn(value) {
+            surreal_ql.String(value)
+          },
+        ),
+      ),
+      #("rc", self.rc |> record.to_surql(id.to_surql)),
+      #("obj", surreal_ql.from_json_value(self.obj)),
+      #("nested_obj", nested_obj_to_surql(self.nested_obj)),
+      #("p", point.to_surql(self.p)),
+      #("e", surreal_ql.String(enum_to_string(self.e))),
+    ],
+  )
+}

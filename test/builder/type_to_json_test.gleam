@@ -132,6 +132,43 @@ pub fn type_to_json_generation_test() {
   birdie.snap(module.to_string(generated), "type_to_json_generation_test")
 }
 
+pub fn type_to_json_generation_with_prefix_test() {
+  let generated =
+    type_to_json.generate(
+      common.Configuration(False, False, "./src/db/test"),
+      "nested",
+      [
+        extractor.TableField(
+          dependencies: [],
+          name: "s",
+          type_: surreal_type.String,
+          linked_enum: option.None,
+          object_fields: [],
+        ),
+        extractor.TableField(
+          dependencies: [],
+          name: "i",
+          type_: surreal_type.Int,
+          linked_enum: option.None,
+          object_fields: [],
+        ),
+        extractor.TableField(
+          dependencies: [],
+          name: "f",
+          type_: surreal_type.Float,
+          linked_enum: option.None,
+          object_fields: [],
+        ),
+      ],
+      "nested_",
+    )
+
+  birdie.snap(
+    module.to_string(generated),
+    "type_to_json_generation_with_prefix_test",
+  )
+}
+
 pub fn type_to_json_generation_with_offstage_test() {
   let generated =
     type_to_json.generate(

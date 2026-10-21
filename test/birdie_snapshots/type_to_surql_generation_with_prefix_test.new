@@ -1,0 +1,15 @@
+---
+version: 2.0.2
+title: type_to_surql_generation_with_prefix_test
+---
+import suweal/surreal_ql
+
+pub fn nested_to_surql(self: Nested) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("s", surreal_ql.String(self.s)),
+      #("i", surreal_ql.Int(self.i)),
+      #("f", surreal_ql.Float(self.f)),
+    ],
+  )
+}
