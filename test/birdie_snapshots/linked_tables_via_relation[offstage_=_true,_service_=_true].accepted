@@ -1,0 +1,393 @@
+---
+version: 2.0.2
+title: LinkedTablesViaRelation[offstage = True, service = True]
+file: ./test/sample/linked_tables_via_relation.gleam
+test_name: linked_tables_via_relation_with_offstage_and_service_test
+---
+// [./src/db/test/linked_table_a.gleam]
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "a"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                     A                                      //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type A {
+  A(
+    id: identifier.Identifier(A),
+    a0: String,
+    a1: Int,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(A) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: A) {
+          data.id
+        },
+      )
+      use context, a0 <- serialize.field(
+        context,
+        "a0",
+        serialize.string(),
+        fn(data: A) {
+          data.a0
+        },
+      )
+      use context, a1 <- serialize.field(
+        context,
+        "a1",
+        serialize.int(),
+        fn(data: A) {
+          data.a1
+        },
+      )
+      serialize.build(context, A(id: id, a0: a0, a1: a1))
+    },
+  )
+}
+
+pub fn to_json(self: A) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: A) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("a0", surreal_ql.String(self.a0)),
+      #("a1", surreal_ql.Int(self.a1)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(A) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: A) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE a TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD a0 ON a TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD a1 ON a TYPE int DEFAULT NONE PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "a",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("a0"),
+    table: "a",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("a1"),
+    table: "a",
+    type_: surreal_type.Int,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
+
+// [./src/db/test/linked_table_b.gleam]
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "b"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                     B                                      //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type B {
+  B(
+    id: identifier.Identifier(B),
+    b0: Bool,
+    b1: Int,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(B) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: B) {
+          data.id
+        },
+      )
+      use context, b0 <- serialize.field(
+        context,
+        "b0",
+        serialize.bool(),
+        fn(data: B) {
+          data.b0
+        },
+      )
+      use context, b1 <- serialize.field(
+        context,
+        "b1",
+        serialize.int(),
+        fn(data: B) {
+          data.b1
+        },
+      )
+      serialize.build(context, B(id: id, b0: b0, b1: b1))
+    },
+  )
+}
+
+pub fn to_json(self: B) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: B) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("b0", surreal_ql.Bool(self.b0)),
+      #("b1", surreal_ql.Int(self.b1)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(B) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: B) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE b TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD b0 ON b TYPE bool DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD b1 ON b TYPE int DEFAULT NONE PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "b",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("b0"),
+    table: "b",
+    type_: surreal_type.Bool,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("b1"),
+    table: "b",
+    type_: surreal_type.Int,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
+
+// [./src/db/test/linked_table_c.gleam]
+import db/test/linked_table_a
+import db/test/linked_table_b
+import gleam/json
+import gleam/option
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/record as os_record
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/record
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+pub const table_name = "c"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                     C                                      //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type C {
+  C(
+    id: identifier.Identifier(C),
+    in: record.Record(linked_table_a.A),
+    out: record.Record(linked_table_b.B),
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(C) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: C) {
+          data.id
+        },
+      )
+      use context, in <- serialize.field(
+        context,
+        "in",
+        os_record.typed_serializer(
+          linked_table_a.serializer(),
+          fn(data) {
+            data.id
+          },
+          [linked_table_a.table_name],
+        ),
+        fn(data: C) {
+          data.in
+        },
+      )
+      use context, out <- serialize.field(
+        context,
+        "out",
+        os_record.typed_serializer(
+          linked_table_b.serializer(),
+          fn(data) {
+            data.id
+          },
+          [linked_table_b.table_name],
+        ),
+        fn(data: C) {
+          data.out
+        },
+      )
+      serialize.build(context, C(id: id, in: in, out: out))
+    },
+  )
+}
+
+pub fn to_json(self: C) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: C) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("in", self.in |> record.to_surql(linked_table_a.to_surql)),
+      #("out", self.out |> record.to_surql(linked_table_b.to_surql)),
+    ],
+  )
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(C) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: C) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE c TYPE RELATION IN a OUT b SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD in ON c TYPE record<a> DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD out ON c TYPE record<b> DEFAULT NONE PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "c",
+    schema: node.Schemafull,
+    type_: node.RelationTable(in: "a", out: "b"),
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("in"),
+    table: "c",
+    type_: surreal_type.Record("a"),
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.Identifier("out"),
+    table: "c",
+    type_: surreal_type.Record("b"),
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]
