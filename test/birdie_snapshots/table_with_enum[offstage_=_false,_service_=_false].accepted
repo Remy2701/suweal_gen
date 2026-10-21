@@ -1,13 +1,12 @@
 ---
 version: 2.0.2
-title: TableWithEnum[offstage = True, service = False]
+title: TableWithEnum[offstage = False, service = False]
+file: ./test/sample/table_with_enum.gleam
+test_name: table_with_enum_test
 ---
+import gleam/dynamic/decode
 import gleam/json
 import gleam/option
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
-import offstage_suweal/identifier as os_identifier
-import offstage_suweal/table_spec as bs_table_spec
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql
@@ -30,8 +29,14 @@ pub fn status_to_string(value value: Status) -> String {
   }
 }
 
-pub fn status_serializer() -> serialize.Serializer(Status) {
-  serialize.string_enum([Draft, Processing, Published], status_to_string)
+pub fn status_decoder() -> decode.Decoder(Status) {
+  use value <- decode.then(decode.string)
+  case value {
+    "draft" -> decode.success(Draft)
+    "processing" -> decode.success(Processing)
+    "published" -> decode.success(Published)
+    _ -> decode.failure(Draft, "Unknown value " <> value)
+  }
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -46,40 +51,21 @@ pub type Post {
   )
 }
 
-pub fn serializer() -> serialize.Serializer(Post) {
-  serialize.object(
-    fn(context) {
-      use context, id <- serialize.field(
-        context,
-        "id",
-        os_identifier.typed_serializer([table_name]),
-        fn(data: Post) {
-          data.id
-        },
-      )
-      use context, title <- serialize.field(
-        context,
-        "title",
-        serialize.string(),
-        fn(data: Post) {
-          data.title
-        },
-      )
-      use context, status <- serialize.field(
-        context,
-        "status",
-        status_serializer(),
-        fn(data: Post) {
-          data.status
-        },
-      )
-      serialize.build(context, Post(id: id, title: title, status: status))
-    },
-  )
+pub fn decoder() -> decode.Decoder(Post) {
+  use status <- decode.field("status", status_decoder())
+  use title <- decode.field("title", decode.string)
+  use id <- decode.field("id", identifier.typed_decoder([table_name]))
+  decode.success(Post(id, title, status))
 }
 
 pub fn to_json(self: Post) -> json.Json {
-  encode.encode_json(self, serialize.encoder(serializer()))
+  json.object(
+    [
+      #("id", self.id |> identifier.to_string |> json.string),
+      #("title", json.string(self.title)),
+      #("status", json.string(status_to_string(self.status))),
+    ],
+  )
 }
 
 pub fn to_surql(self: Post) -> surreal_ql.SurrealQL {
@@ -91,7 +77,7 @@ pub fn to_surql(self: Post) -> surreal_ql.SurrealQL {
   )
 }
 
-pub fn specs() -> bs_table_spec.TableSpec(Post) {
+pub fn specs() -> table_spec.GleamTableSpec(Post) {
   table_spec.TableSpec(
     table_name: table_name,
     query_string: query_string,
@@ -101,7 +87,7 @@ pub fn specs() -> bs_table_spec.TableSpec(Post) {
     },
     to_surql: to_surql,
     to_json: to_json,
-    serializer: serializer,
+    serializer: decoder,
   )
 }
 

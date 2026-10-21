@@ -1,6 +1,8 @@
 ---
 version: 2.0.2
-title: TableWithEnum[offstage = True, service = True]
+title: TableWithEnum[offstage = True, service = False]
+file: ./test/sample/table_with_enum.gleam
+test_name: table_with_enum_with_offstage_test
 ---
 import gleam/json
 import gleam/option
