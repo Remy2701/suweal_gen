@@ -1,6 +1,8 @@
 ---
 version: 2.0.2
 title: type_to_surql_generation_test
+file: ./test/builder/type_to_surql_test.gleam
+test_name: type_to_surql_generation_test
 ---
 import gleam/time/calendar
 import gleam/time/timestamp

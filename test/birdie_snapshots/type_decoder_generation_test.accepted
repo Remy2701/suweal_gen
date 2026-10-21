@@ -1,0 +1,53 @@
+---
+version: 2.0.2
+title: type_decoder_generation_test
+file: ./test/builder/type_decoder_test.gleam
+test_name: type_decoder_generation_test
+---
+import gleam/dynamic/decode
+import gleam/int
+import gleam/time/timestamp
+import json_value
+import suweal/identifier
+import suweal/point
+import suweal/record
+
+pub fn decoder() -> decode.Decoder(User) {
+  use e <- decode.field("e", enum_decoder())
+  use p <- decode.field("p", point.decoder())
+  use nested_obj <- decode.field("nested_obj", nested_obj_decoder())
+  use obj <- decode.field("obj", json_value.decoder())
+  use rc <- decode.field(
+    "rc",
+    record.typed_decoder(
+      id.decoder(),
+      fn(data) {
+        data.id
+      },
+      [table_name],
+    ),
+  )
+  use id <- decode.field("id", identifier.typed_decoder([table_name]))
+  use o <- decode.optional_field("o", option.None, decode.optional(decode.string))
+  use d <- decode.field(
+    "d",
+    decode.then(
+      decode.string,
+      fn(str) {
+        case timestamp.parse_rfc3339(str) {
+          Ok(time) -> decode.success(time)
+          Error(_) -> decode.failure(timestamp.unix_epoch, "Failed to parse datetime: " <> str)
+        }
+      },
+    ),
+  )
+  use a <- decode.field("a", decode.list(decode.string))
+  use b <- decode.field("b", decode.bool)
+  use f <- decode.field(
+    "f",
+    decode.one_of(decode.float, [decode.int |> decode.map(int.to_float)]),
+  )
+  use i <- decode.field("i", decode.int)
+  use s <- decode.field("s", decode.string)
+  decode.success(User(s, i, f, b, a, d, o, id, rc, obj, nested_obj, p, e))
+}

@@ -1,0 +1,39 @@
+---
+version: 2.0.2
+title: type_decoder_generation_with_prefix_and_offstage_test
+file: ./test/builder/type_decoder_test.gleam
+test_name: type_decoder_generation_with_prefix_and_offstage_test
+---
+import offstage/dynamic/serialize
+
+pub fn nested_serializer() -> serialize.Serializer(Nested) {
+  serialize.object(
+    fn(context) {
+      use context, s <- serialize.field(
+        context,
+        "s",
+        serialize.string(),
+        fn(data: Nested) {
+          data.s
+        },
+      )
+      use context, i <- serialize.field(
+        context,
+        "i",
+        serialize.int(),
+        fn(data: Nested) {
+          data.i
+        },
+      )
+      use context, f <- serialize.field(
+        context,
+        "f",
+        serialize.float(),
+        fn(data: Nested) {
+          data.f
+        },
+      )
+      serialize.build(context, Nested(s: s, i: i, f: f))
+    },
+  )
+}

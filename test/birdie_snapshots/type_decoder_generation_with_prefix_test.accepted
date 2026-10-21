@@ -1,0 +1,18 @@
+---
+version: 2.0.2
+title: type_decoder_generation_with_prefix_test
+file: ./test/builder/type_decoder_test.gleam
+test_name: type_decoder_generation_with_prefix_test
+---
+import gleam/dynamic/decode
+import gleam/int
+
+pub fn nested_decoder() -> decode.Decoder(Nested) {
+  use f <- decode.field(
+    "f",
+    decode.one_of(decode.float, [decode.int |> decode.map(int.to_float)]),
+  )
+  use i <- decode.field("i", decode.int)
+  use s <- decode.field("s", decode.string)
+  decode.success(Nested(s, i, f))
+}
