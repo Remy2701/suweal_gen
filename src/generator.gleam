@@ -4,7 +4,7 @@ import gleam/dict
 import gleam/function
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/order
 import gleam/pair
 import gleam/result
@@ -14,6 +14,7 @@ import internal/builder/enum_decoder
 import internal/builder/enum_definition
 import internal/builder/enum_to_string
 import internal/builder/parameters_builder
+import internal/builder/query_builder
 import internal/builder/table_spec
 import internal/builder/type_decoder
 import internal/builder/type_definition
@@ -21,8 +22,6 @@ import internal/builder/type_to_json
 import internal/builder/type_to_surql
 import omcg/module
 import omcg/module_common
-import omcg/offstage_serialize_module
-import omcg/option_module
 import suweal/node
 import suweal/surreal_type.{type SurrealType}
 
@@ -919,100 +918,6 @@ fn complete_parameter_extraction(
   })
 }
 
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                             Query                                             //
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-
-fn generate_query_builder(
-  parameters: List(ParameterProperty),
-  result_type: String,
-  prefix: option.Option(String),
-  operation_type: String,
-  only only: Bool,
-) -> module.Module {
-  list.fold(
-    parameters,
-    module.function_definition.create()
-      |> module.function_definition.with_name("query")
-      |> module.function_definition.public()
-      |> module.function_definition.with_return_type(
-        module.function_call.create(module.binop.access(
-          module.identifier.create("query"),
-          module.identifier.create("Query"),
-        ))
-        |> module.function_call.add(case only {
-          True -> module.identifier.create(result_type)
-          False ->
-            module.function_call.create(module.identifier.create("List"))
-            |> module.function_call.add(module.identifier.create(result_type))
-        })
-        |> module.function_call.add(
-          option_module.type_(case only {
-            True -> module.identifier.create(result_type)
-            False ->
-              module.function_call.create(module.identifier.create("List"))
-              |> module.function_call.add(module.identifier.create(result_type))
-          }),
-        ),
-      ),
-    fn(module, entry) {
-      module.function_definition.add_aliased_parameter(
-        module,
-        entry.name,
-        entry.name,
-        surreal_type.to_gleam_module(entry.type_, entry.linked_enum),
-      )
-    },
-  )
-  |> module.function_definition.add(
-    module.binop.access(
-      module.identifier.create("query"),
-      module.identifier.create("query"),
-    )
-    |> module.function_call.create()
-    |> module.function_call.add_with_alias("resource", case prefix {
-      Some(prefix) ->
-        module.binop.access(
-          module.identifier.create(prefix),
-          module.identifier.create("table_name"),
-        )
-      None -> module.identifier.create("table_name")
-    })
-    |> module.function_call.add_with_alias(
-      "operation_type",
-      module.binop.access(
-        module.identifier.create("suweal_service"),
-        module.identifier.create(operation_type),
-      ),
-    )
-    |> module.function_call.add_with_alias(
-      "query",
-      module.identifier.create("query_node"),
-    )
-    |> module.function_call.add_with_alias("serializer", case only {
-      True -> module.identifier.create("serializer")
-      False ->
-        offstage_serialize_module.list_of(
-          module.function_call.create(module.identifier.create("serializer")),
-        )
-    })
-    |> module.function_call.add_with_alias(
-      "parameters",
-      module.function_call.create(module.identifier.create("parameters"))
-        |> list.fold(parameters, _, fn(module, entry) {
-          module.function_call.add_with_alias(
-            module,
-            entry.name,
-            module.identifier.create(entry.name),
-          )
-        }),
-    ),
-  )
-  |> module.add_import(["suweal", "surreal_ql"])
-  |> module.add_import(["suweal_service", "query"])
-  |> module.add_import(["suweal_service"])
-}
-
 fn do_define_normal_table_node(
   config: common.Configuration,
   node: node.Node,
@@ -1333,7 +1238,7 @@ fn do_select_node(
     True ->
       module.root.add(
         module,
-        generate_query_builder(
+        query_builder.generate(
           parameters,
           "QueryResult",
           option.Some(namespace),
@@ -1452,7 +1357,7 @@ fn do_update_node(
     True ->
       module.root.add(
         module,
-        generate_query_builder(
+        query_builder.generate(
           parameters,
           "QueryResult",
           option.Some(namespace),
@@ -1562,7 +1467,7 @@ fn do_create_node(
     True ->
       module.root.add(
         module,
-        generate_query_builder(
+        query_builder.generate(
           parameters,
           "QueryResult",
           option.Some(namespace),
@@ -1717,7 +1622,7 @@ fn do_delete_node(
         True ->
           module.root.add(
             module,
-            generate_query_builder(
+            query_builder.generate(
               parameters,
               "QueryResult",
               option.Some(namespace),
@@ -1910,7 +1815,7 @@ fn do_relate_node(
     True ->
       module.root.add(
         module,
-        generate_query_builder(
+        query_builder.generate(
           parameters,
           "QueryResult",
           option.Some(namespace),
