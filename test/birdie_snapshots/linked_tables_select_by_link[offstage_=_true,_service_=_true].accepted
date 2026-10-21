@@ -1,0 +1,65 @@
+---
+version: 2.0.2
+title: LinkedTablesSelectByLink[offstage = True, service = True]
+file: ./test/sample/linked_tables_select_by_link.gleam
+test_name: linked_tables_select_by_link_with_service_test
+---
+import db/test/linked_table_a
+import db/test/linked_table_b
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                Query result                                //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type QueryResult = linked_table_b.B
+
+pub const to_json = linked_table_b.to_json
+
+pub const serializer = linked_table_b.serializer
+
+pub fn parameters(b0 b0: identifier.Identifier(linked_table_a.A)) -> List(#(String, surreal_ql.SurrealQL)) {
+  [#("b0", surreal_ql.Raw(identifier.to_string(b0)))]
+}
+
+pub fn query(b0 b0: identifier.Identifier(linked_table_a.A)) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: linked_table_b.table_name,
+    operation_type: suweal_service.Read,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(b0: b0),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "SELECT * FROM b WHERE b0 = $b0;\n"
+
+pub const query_node = [
+  node.Select(
+    fields: [
+      node.SelectField(field: node.All, alias: option.None, value: False),
+    ],
+    only: False,
+    table: "b",
+    where: option.Some(
+      node.BinaryOperator(
+        lhs: node.Identifier("b0"),
+        operator: node.Equal,
+        rhs: node.Parameter("b0"),
+      ),
+    ),
+    order: option.None,
+    limit: option.None,
+    group_all: False,
+  ),
+]
