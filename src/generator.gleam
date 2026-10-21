@@ -1802,7 +1802,7 @@ fn do_relate_node(
               |> result.map(fn(info) {
                 extractor.TableField(
                   ..f,
-                  type_: surreal_type.Record(
+                  type_: surreal_type.Identifier(
                     id_case.namespace_of(info.path)
                     <> "."
                     <> id_case.to_pascal_case(info.name).value,
@@ -1837,7 +1837,7 @@ fn do_relate_node(
               |> result.map(fn(info) {
                 extractor.TableField(
                   ..f,
-                  type_: surreal_type.Record(
+                  type_: surreal_type.Identifier(
                     id_case.namespace_of(info.path)
                     <> "."
                     <> id_case.to_pascal_case(info.name).value,

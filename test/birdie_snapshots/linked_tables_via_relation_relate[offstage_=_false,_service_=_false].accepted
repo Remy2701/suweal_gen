@@ -19,12 +19,12 @@ pub const decoder = linked_table_c.decoder
 pub const to_json = linked_table_c.to_json
 
 pub fn parameters(
-  a a: record.Record(linked_table_a.A),
-  b b: record.Record(linked_table_b.B),
+  a a: identifier.Identifier(linked_table_a.A),
+  b b: identifier.Identifier(linked_table_b.B),
 ) -> List(#(String, surreal_ql.SurrealQL)) {
   [
-    #("a", surreal_ql.Raw(identifier.to_string(a.id))),
-    #("b", surreal_ql.Raw(identifier.to_string(b.id))),
+    #("a", surreal_ql.Raw(identifier.to_string(a))),
+    #("b", surreal_ql.Raw(identifier.to_string(b))),
   ]
 }
 
