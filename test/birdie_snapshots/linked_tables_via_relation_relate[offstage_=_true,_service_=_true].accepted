@@ -1,0 +1,61 @@
+---
+version: 2.0.2
+title: LinkedTablesViaRelationRelate[offstage = True, service = True]
+file: ./test/sample/linked_tables_via_relation_relate.gleam
+test_name: linked_tables_via_relation_relate_with_service_test
+---
+import db/test/linked_table_a
+import db/test/linked_table_b
+import db/test/linked_table_c
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/identifier
+import suweal/node
+import suweal/record
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+pub type QueryResult = linked_table_c.C
+
+pub const serializer = linked_table_c.serializer
+
+pub const to_json = linked_table_c.to_json
+
+pub fn parameters(
+  a a: record.Record(linked_table_a.A),
+  b b: record.Record(linked_table_b.B),
+) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("a", surreal_ql.Raw(identifier.to_string(a.id))),
+    #("b", surreal_ql.Raw(identifier.to_string(b.id))),
+  ]
+}
+
+pub fn query(
+  a a: record.Record(linked_table_a.A),
+  b b: record.Record(linked_table_b.B),
+) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: linked_table_c.table_name,
+    operation_type: suweal_service.Create,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(a: a, b: b),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "RELATE $a->c->$b;\n"
+
+pub const query_node = [
+  node.Relate(
+    table: "c",
+    from: node.Parameter("a"),
+    to: node.Parameter("b"),
+    set: [],
+  ),
+]
