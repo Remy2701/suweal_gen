@@ -25,7 +25,7 @@ pub fn query(
   id id: identifier.Identifier(user),
   rc rc: record.Record(id),
   obj obj: surreal_ql.SurrealQL,
-  nested_obj nested_obj: surreal_ql.SurrealQL,
+  nested_obj nested_obj: Nested,
   p p: point.Point,
   e e: enum,
 ) -> query.Query(List(ResultType), option.Option(List(ResultType))) {

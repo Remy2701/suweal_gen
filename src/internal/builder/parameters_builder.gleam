@@ -1,5 +1,7 @@
 import common
 import gleam/list
+import gleam/option
+import gleam/string
 import omcg/module
 import suweal/surreal_type
 
@@ -31,7 +33,22 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
         module,
         entry.name,
         entry.name,
-        surreal_type.to_gleam_module(entry.type_, entry.linked_enum),
+        case entry.nested {
+          option.Some(nested) ->
+            module.identifier.create(
+              case list.reverse(string.split(nested, ".")) {
+                [last, ..rest] ->
+                  string.join(
+                    list.reverse([common.string_to_pascal_case(last), ..rest]),
+                    ".",
+                  )
+                [] -> ""
+              },
+            )
+          _ -> {
+            surreal_type.to_gleam_module(entry.type_, entry.linked_enum)
+          }
+        },
       )
     },
   )
@@ -40,11 +57,26 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
       list.map(parameters, fn(entry) {
         module.literal.tuple([
           module.literal.string(entry.name),
-          surreal_type.value_to_gleam_module(
-            entry.type_,
-            entry.linked_enum,
-            entry.name,
-          ),
+          case entry.nested {
+            option.Some(nested) -> {
+              module.identifier.create(
+                string.join(
+                  string.split(nested, ".")
+                    |> list.map(common.string_to_snake_case),
+                  ".",
+                )
+                <> "_to_surql",
+              )
+              |> module.function_call.create()
+            }
+            _ -> {
+              surreal_type.value_to_gleam_module(
+                entry.type_,
+                entry.linked_enum,
+                entry.name,
+              )
+            }
+          },
         ])
       }),
     ),

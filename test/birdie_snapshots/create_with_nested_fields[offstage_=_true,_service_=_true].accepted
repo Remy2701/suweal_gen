@@ -18,11 +18,11 @@ pub const serializer = table_with_nested_fields.serializer
 
 pub const to_json = table_with_nested_fields.to_json
 
-pub fn parameters(meta meta: surreal_ql.SurrealQL) -> List(#(String, surreal_ql.SurrealQL)) {
-  [#("meta", meta)]
+pub fn parameters(meta meta: table_with_nested_fields.Meta) -> List(#(String, surreal_ql.SurrealQL)) {
+  [#("meta", table_with_nested_fields.meta_to_surql())]
 }
 
-pub fn query(meta meta: surreal_ql.SurrealQL) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+pub fn query(meta meta: table_with_nested_fields.Meta) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
   query.query(
     resource: table_with_nested_fields.table_name,
     operation_type: suweal_service.Create,

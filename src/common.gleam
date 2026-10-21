@@ -16,6 +16,7 @@ pub type ParameterProperty {
     type_: surreal_type.SurrealType,
     linked_enum: option.Option(String),
     dependencies: List(String),
+    nested: option.Option(String),
   )
 }
 

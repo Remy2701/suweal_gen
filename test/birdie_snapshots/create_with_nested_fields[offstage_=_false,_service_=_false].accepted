@@ -14,8 +14,8 @@ pub const decoder = table_with_nested_fields.decoder
 
 pub const to_json = table_with_nested_fields.to_json
 
-pub fn parameters(meta meta: surreal_ql.SurrealQL) -> List(#(String, surreal_ql.SurrealQL)) {
-  [#("meta", meta)]
+pub fn parameters(meta meta: table_with_nested_fields.Meta) -> List(#(String, surreal_ql.SurrealQL)) {
+  [#("meta", table_with_nested_fields.meta_to_surql())]
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

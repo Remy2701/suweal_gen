@@ -751,6 +751,7 @@ fn pick_field(
   }
 }
 
+/// Extracts the parameters from a given node based on the expected type and table information.
 fn extract_parameters(
   node: node.Node,
   expected_type: Result(SurrealType, Nil),
@@ -759,6 +760,7 @@ fn extract_parameters(
   namespace: String,
 ) {
   case node {
+    // Equality check with None `${name} = none`
     node.BinaryOperator(
       lhs: node.Parameter(name),
       operator: node.Equal,
@@ -770,21 +772,25 @@ fn extract_parameters(
           type_: surreal_type.Option(surreal_type.None),
           linked_enum: option.None,
           dependencies: [],
+          nested: option.None,
         ),
       ])
     }
+    // Equality | Comparison check for parameters `lhs >= rhs`
     node.BinaryOperator(lhs:, operator: node.Equal, rhs:)
+    | node.BinaryOperator(lhs:, operator: node.NotEqual, rhs:)
     | node.BinaryOperator(lhs:, operator: node.GreaterThan, rhs:)
     | node.BinaryOperator(lhs:, operator: node.GreaterThanOrEqual, rhs:)
     | node.BinaryOperator(lhs:, operator: node.LessThan, rhs:)
     | node.BinaryOperator(lhs:, operator: node.LessThanOrEqual, rhs:) ->
       case rhs {
         node.Parameter(name) -> {
+          // Assigning parameter property to a value.
           // Figure out the type of the lhs and add it to the parameters list
           pick_field(table_info.fields, lhs)
           |> result.map(fn(f) {
-            case f.name == "id", f.type_ {
-              True, surreal_type.Identifier(identifier_name) ->
+            case f.name, f.type_ {
+              "id", surreal_type.Identifier(identifier_name) -> {
                 case string.contains(identifier_name, ".") {
                   True ->
                     ParameterProperty(
@@ -792,6 +798,7 @@ fn extract_parameters(
                       type_: f.type_,
                       linked_enum: option.None,
                       dependencies: [],
+                      nested: option.None,
                     )
                   _ ->
                     ParameterProperty(
@@ -801,8 +808,10 @@ fn extract_parameters(
                       ),
                       linked_enum: option.None,
                       dependencies: [],
+                      nested: option.None,
                     )
                 }
+              }
               _, surreal_type.Record(record_name) ->
                 case dict.get(tables, record_name) {
                   Ok(info) ->
@@ -815,6 +824,7 @@ fn extract_parameters(
                       ),
                       linked_enum: option.None,
                       dependencies: [],
+                      nested: option.None,
                     )
                   _ ->
                     ParameterProperty(
@@ -822,6 +832,7 @@ fn extract_parameters(
                       type_: surreal_type.Identifier(name),
                       linked_enum: option.None,
                       dependencies: [],
+                      nested: option.None,
                     )
                 }
               _, surreal_type.String ->
@@ -836,6 +847,7 @@ fn extract_parameters(
                     }
                   }),
                   dependencies: f.dependencies,
+                  nested: option.None,
                 )
               _, surreal_type.Option(surreal_type.String) ->
                 ParameterProperty(
@@ -849,29 +861,46 @@ fn extract_parameters(
                     }
                   }),
                   dependencies: f.dependencies,
+                  nested: option.None,
                 )
+              _, surreal_type.Object -> {
+                ParameterProperty(
+                  name: name,
+                  type_: f.type_,
+                  linked_enum: option.None,
+                  dependencies: [],
+                  nested: case f.object_fields {
+                    [] -> option.None
+                    _ ->
+                      option.Some(
+                        namespace <> "." <> common.string_to_pascal_case(f.name),
+                      )
+                  },
+                )
+              }
               _, _ ->
                 ParameterProperty(
                   name: name,
                   type_: f.type_,
                   linked_enum: option.None,
                   dependencies: [],
+                  nested: option.None,
                 )
             }
           })
-          |> result.unwrap(
-            ParameterProperty(
-              name: name,
-              type_: surreal_type.Object,
-              linked_enum: option.None,
-              dependencies: [],
-            ),
-          )
+          |> result.unwrap(ParameterProperty(
+            name: name,
+            type_: surreal_type.Object,
+            linked_enum: option.None,
+            dependencies: [],
+            nested: option.None,
+          ))
           |> list.wrap()
           |> Ok
         }
         _ -> Error(Nil)
       }
+    // And | Or logical operators for combining conditions.
     node.BinaryOperator(lhs:, operator: node.And, rhs:)
     | node.BinaryOperator(lhs:, operator: node.Or, rhs:) ->
       [
@@ -881,6 +910,7 @@ fn extract_parameters(
       |> list.filter_map(function.identity)
       |> list.flatten()
       |> Ok
+    // Single parameter `${name}
     node.Parameter(name) ->
       case expected_type {
         Ok(type_) ->
@@ -890,12 +920,15 @@ fn extract_parameters(
               type_: type_,
               linked_enum: option.None,
               dependencies: [],
+              nested: option.None,
             ),
           ])
         _ -> Error(Nil)
       }
-    node.WrappedNode(inner) ->
+    // Wrapped node containing another node `({inner})`.
+    node.WrappedNode(inner) -> {
       extract_parameters(inner, expected_type, table_info, tables, namespace)
+    }
     _ -> Error(Nil)
   }
 }

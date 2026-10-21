@@ -1,6 +1,7 @@
 import common
 import gleam/list
 import gleam/option.{None, Some}
+import gleam/string
 import omcg/module
 import omcg/offstage_serialize_module
 import omcg/option_module
@@ -47,7 +48,22 @@ pub fn generate(
         module,
         entry.name,
         entry.name,
-        surreal_type.to_gleam_module(entry.type_, entry.linked_enum),
+        case entry.nested {
+          option.Some(nested) ->
+            module.identifier.create(
+              case list.reverse(string.split(nested, ".")) {
+                [last, ..rest] ->
+                  string.join(
+                    list.reverse([common.string_to_pascal_case(last), ..rest]),
+                    ".",
+                  )
+                [] -> ""
+              },
+            )
+          _ -> {
+            surreal_type.to_gleam_module(entry.type_, entry.linked_enum)
+          }
+        },
       )
     },
   )
