@@ -1,0 +1,64 @@
+---
+version: 2.0.2
+title: parameters_builder_generation_test
+file: ./test/builder/parameters_builder_test.gleam
+test_name: parameters_builder_generation_test
+---
+import gleam/option
+import gleam/time/calendar
+import gleam/time/timestamp
+import suweal/identifier
+import suweal/point
+import suweal/record
+import suweal/surreal_ql
+
+pub fn parameters(
+  s s: String,
+  i i: Int,
+  f f: Float,
+  b b: Bool,
+  a a: List(String),
+  d d: timestamp.Timestamp,
+  o o: option.Option(String),
+  id id: identifier.Identifier(user),
+  rc rc: record.Record(id),
+  obj obj: surreal_ql.SurrealQL,
+  nested_obj nested_obj: surreal_ql.SurrealQL,
+  p p: point.Point,
+  e e: enum,
+) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("s", surreal_ql.String(s)),
+    #("i", surreal_ql.Int(i)),
+    #("f", surreal_ql.Float(f)),
+    #("b", surreal_ql.Bool(b)),
+    #(
+      "a",
+      surreal_ql.array(
+        a,
+        fn(value) {
+          surreal_ql.String(value)
+        },
+      ),
+    ),
+    #(
+      "d",
+      surreal_ql.Datetime(timestamp.to_rfc3339(d, calendar.utc_offset)),
+    ),
+    #(
+      "o",
+      surreal_ql.nullable(
+        o,
+        fn(value) {
+          surreal_ql.String(value)
+        },
+      ),
+    ),
+    #("id", surreal_ql.Raw(identifier.to_string(id))),
+    #("rc", surreal_ql.Raw(identifier.to_string(rc.id))),
+    #("obj", obj),
+    #("nested_obj", nested_obj),
+    #("p", point.to_surql(p)),
+    #("e", surreal_ql.String(.enum_to_string(e))),
+  ]
+}

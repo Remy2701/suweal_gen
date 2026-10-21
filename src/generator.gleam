@@ -1,4 +1,4 @@
-import common
+import common.{type ParameterProperty, ParameterProperty}
 import extractor
 import gleam/dict
 import gleam/function
@@ -13,6 +13,7 @@ import gleam/string
 import internal/builder/enum_decoder
 import internal/builder/enum_definition
 import internal/builder/enum_to_string
+import internal/builder/parameters_builder
 import internal/builder/table_spec
 import internal/builder/type_decoder
 import internal/builder/type_definition
@@ -730,15 +731,6 @@ fn resolve_table_fields(
   }
 }
 
-pub type ParameterProperty {
-  ParameterProperty(
-    name: String,
-    type_: SurrealType,
-    linked_enum: option.Option(String),
-    dependencies: List(String),
-  )
-}
-
 fn pick_field(
   fields: List(extractor.TableField),
   node: node.Node,
@@ -925,57 +917,6 @@ fn complete_parameter_extraction(
       Error(_) -> list.append(acc, [param])
     }
   })
-}
-
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                          Parameters                                           //
-// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-
-fn generate_parameters_builder(
-  parameters: List(ParameterProperty),
-) -> module.Module {
-  list.fold(
-    parameters,
-    module.function_definition.create()
-      |> module.function_definition.with_name("parameters")
-      |> module.function_definition.public()
-      |> module.function_definition.with_return_type(
-        module.function_call.create(module.identifier.create("List"))
-        |> module.function_call.add(
-          module.literal.tuple([
-            module.identifier.create("String"),
-            module.binop.access(
-              module.identifier.create("surreal_ql"),
-              module.identifier.create("SurrealQL"),
-            )
-              |> module.add_import(["suweal", "surreal_ql"]),
-          ]),
-        ),
-      ),
-    fn(module, entry) {
-      module.function_definition.add_aliased_parameter(
-        module,
-        entry.name,
-        entry.name,
-        surreal_type.to_gleam_module(entry.type_, entry.linked_enum),
-      )
-    },
-  )
-  |> module.function_definition.add(
-    module.literal.list(
-      list.map(parameters, fn(entry) {
-        module.literal.tuple([
-          module.literal.string(entry.name),
-          surreal_type.value_to_gleam_module(
-            entry.type_,
-            entry.linked_enum,
-            entry.name,
-          ),
-        ])
-      }),
-    ),
-  )
-  |> module.add_import(["suweal", "surreal_ql"])
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -1384,7 +1325,7 @@ fn do_select_node(
     [] -> module
     _ -> {
       module
-      |> module.root.add(generate_parameters_builder(parameters))
+      |> module.root.add(parameters_builder.generate(parameters))
     }
   }
 
@@ -1504,7 +1445,7 @@ fn do_update_node(
 
   let module = case parameters {
     [] -> module
-    _ -> module.root.add(module, generate_parameters_builder(parameters))
+    _ -> module.root.add(module, parameters_builder.generate(parameters))
   }
 
   let module = case config.service {
@@ -1614,7 +1555,7 @@ fn do_create_node(
 
   let module = case parameters {
     [] -> module
-    _ -> module.root.add(module, generate_parameters_builder(parameters))
+    _ -> module.root.add(module, parameters_builder.generate(parameters))
   }
 
   let module = case config.service {
@@ -1769,7 +1710,7 @@ fn do_delete_node(
 
       let module = case parameters {
         [] -> module
-        _ -> module.root.add(module, generate_parameters_builder(parameters))
+        _ -> module.root.add(module, parameters_builder.generate(parameters))
       }
 
       let module = case config.service {
@@ -1962,7 +1903,7 @@ fn do_relate_node(
 
   let module = case parameters {
     [] -> module
-    _ -> module.root.add(module, generate_parameters_builder(parameters))
+    _ -> module.root.add(module, parameters_builder.generate(parameters))
   }
 
   let module = case config.service {
