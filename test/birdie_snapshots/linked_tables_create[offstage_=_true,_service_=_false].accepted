@@ -1,0 +1,50 @@
+---
+version: 2.0.2
+title: LinkedTablesCreate[offstage = True, service = False]
+file: ./test/sample/linked_tables_create.gleam
+test_name: linked_tables_create_with_offstage_test
+---
+import db/test/linked_table_a
+import db/test/linked_table_b
+import suweal/identifier
+import suweal/node
+import suweal/record
+import suweal/surreal_ql
+
+pub type QueryResult = linked_table_b.B
+
+pub const serializer = linked_table_b.serializer
+
+pub const to_json = linked_table_b.to_json
+
+pub fn parameters(b0 b0: identifier.Identifier(linked_table_a.A), b1 b1: Int) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("b0", surreal_ql.Raw(identifier.to_string(b0))),
+    #("b1", surreal_ql.Int(b1)),
+  ]
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "CREATE b SET b0 = $b0, b1 = $b1;\n"
+
+pub const query_node = [
+  node.Create(
+    only: False,
+    target: "b",
+    set: [
+      node.BinaryOperator(
+        lhs: node.Identifier("b0"),
+        operator: node.Equal,
+        rhs: node.Parameter("b0"),
+      ),
+      node.BinaryOperator(
+        lhs: node.Identifier("b1"),
+        operator: node.Equal,
+        rhs: node.Parameter("b1"),
+      ),
+    ],
+  ),
+]
