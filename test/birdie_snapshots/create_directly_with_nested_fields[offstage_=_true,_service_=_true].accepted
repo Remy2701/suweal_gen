@@ -1,0 +1,69 @@
+---
+version: 2.0.2
+title: CreateDirectlyWithNestedFields[offstage = True, service = True]
+file: ./test/sample/create_with_nested_fields_test.gleam
+test_name: create_directly_with_nested_fields_with_service_test
+---
+import db/test/table_with_nested_fields
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+pub type QueryResult = table_with_nested_fields.Post
+
+pub const serializer = table_with_nested_fields.serializer
+
+pub const to_json = table_with_nested_fields.to_json
+
+pub fn parameters(title title: String, content content: String) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("title", surreal_ql.String(title)),
+    #("content", surreal_ql.String(content)),
+  ]
+}
+
+pub fn query(title title: String, content content: String) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: table_with_nested_fields.table_name,
+    operation_type: suweal_service.Create,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(title: title, content: content),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "CREATE post SET meta.title = $title, meta.content = $content;\n"
+
+pub const query_node = [
+  node.Create(
+    only: False,
+    target: "post",
+    set: [
+      node.BinaryOperator(
+        lhs: node.BinaryOperator(
+          lhs: node.Identifier("meta"),
+          operator: node.Access,
+          rhs: node.Identifier("title"),
+        ),
+        operator: node.Equal,
+        rhs: node.Parameter("title"),
+      ),
+      node.BinaryOperator(
+        lhs: node.BinaryOperator(
+          lhs: node.Identifier("meta"),
+          operator: node.Access,
+          rhs: node.Identifier("content"),
+        ),
+        operator: node.Equal,
+        rhs: node.Parameter("content"),
+      ),
+    ],
+  ),
+]

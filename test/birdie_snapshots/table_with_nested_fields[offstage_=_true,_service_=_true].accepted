@@ -1,0 +1,181 @@
+---
+version: 2.0.2
+title: TableWithNestedFields[offstage = True, service = True]
+file: ./test/sample/table_with_nested_fields.gleam
+test_name: table_with_nested_fields_with_service_test
+---
+import gleam/json
+import gleam/option
+import json_value
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage_suweal/identifier as os_identifier
+import offstage_suweal/table_spec as bs_table_spec
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal/surreal_type
+import suweal/table_spec
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                    Meta                                    //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type Meta {
+  Meta(
+    title: String,
+    content: String,
+  )
+}
+
+pub fn meta_serializer() -> serialize.Serializer(Meta) {
+  serialize.object(
+    fn(context) {
+      use context, title <- serialize.field(
+        context,
+        "title",
+        serialize.string(),
+        fn(data: Meta) {
+          data.title
+        },
+      )
+      use context, content <- serialize.field(
+        context,
+        "content",
+        serialize.string(),
+        fn(data: Meta) {
+          data.content
+        },
+      )
+      serialize.build(context, Meta(title: title, content: content))
+    },
+  )
+}
+
+pub fn meta_to_json(self: Meta) -> json.Json {
+  encode.encode_json(self, serialize.encoder(meta_serializer()))
+}
+
+pub fn meta_to_surql(self: Meta) -> surreal_ql.SurrealQL {
+  surreal_ql.Object(
+    [
+      #("title", surreal_ql.String(self.title)),
+      #("content", surreal_ql.String(self.content)),
+    ],
+  )
+}
+
+pub const table_name = "post"
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                    Post                                    //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type Post {
+  Post(
+    id: identifier.Identifier(Post),
+    meta: Meta,
+  )
+}
+
+pub fn serializer() -> serialize.Serializer(Post) {
+  serialize.object(
+    fn(context) {
+      use context, id <- serialize.field(
+        context,
+        "id",
+        os_identifier.typed_serializer([table_name]),
+        fn(data: Post) {
+          data.id
+        },
+      )
+      use context, meta <- serialize.field(
+        context,
+        "meta",
+        meta_serializer(),
+        fn(data: Post) {
+          data.meta
+        },
+      )
+      serialize.build(context, Post(id: id, meta: meta))
+    },
+  )
+}
+
+pub fn to_json(self: Post) -> json.Json {
+  encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn to_surql(self: Post) -> surreal_ql.SurrealQL {
+  surreal_ql.Object([#("meta", meta_to_surql(self.meta))])
+}
+
+pub fn specs() -> bs_table_spec.TableSpec(Post) {
+  table_spec.TableSpec(
+    table_name: table_name,
+    query_string: query_string,
+    query: query_node,
+    id: fn(value: Post) {
+      identifier.Identifier(value.id.type_, value.id.id)
+    },
+    to_surql: to_surql,
+    to_json: to_json,
+    serializer: serializer,
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DEFINE TABLE post TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;\n"
+<> "\n"
+<> "DEFINE FIELD meta ON post TYPE object DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD meta.title ON post TYPE string DEFAULT NONE PERMISSIONS FULL;\n"
+<> "DEFINE FIELD meta.content ON post TYPE string PERMISSIONS FULL;\n"
+<> "\n"
+
+pub const query_node = [
+  node.DefineTable(
+    name: "post",
+    schema: node.Schemafull,
+    type_: node.NormalTable,
+    permissions: [node.PermissionNone],
+    as_: option.None,
+  ),
+  node.DefineField(
+    name: node.Identifier("meta"),
+    table: "post",
+    type_: surreal_type.Object,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.BinaryOperator(
+      lhs: node.Identifier("meta"),
+      operator: node.Access,
+      rhs: node.Identifier("title"),
+    ),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.Some(node.None),
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+  node.DefineField(
+    name: node.BinaryOperator(
+      lhs: node.Identifier("meta"),
+      operator: node.Access,
+      rhs: node.Identifier("content"),
+    ),
+    table: "post",
+    type_: surreal_type.String,
+    default: option.None,
+    assert_: option.None,
+    permissions: [node.PermissionFull],
+    flexible: False,
+  ),
+]

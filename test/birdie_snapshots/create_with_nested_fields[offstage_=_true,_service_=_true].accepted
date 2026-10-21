@@ -1,0 +1,53 @@
+---
+version: 2.0.2
+title: CreateWithNestedFields[offstage = True, service = True]
+file: ./test/sample/create_with_nested_fields_test.gleam
+test_name: create_with_nested_fields_with_service_test
+---
+import db/test/table_with_nested_fields
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+pub type QueryResult = table_with_nested_fields.Post
+
+pub const serializer = table_with_nested_fields.serializer
+
+pub const to_json = table_with_nested_fields.to_json
+
+pub fn parameters(meta meta: surreal_ql.SurrealQL) -> List(#(String, surreal_ql.SurrealQL)) {
+  [#("meta", meta)]
+}
+
+pub fn query(meta meta: surreal_ql.SurrealQL) -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
+  query.query(
+    resource: table_with_nested_fields.table_name,
+    operation_type: suweal_service.Create,
+    query: query_node,
+    serializer: serialize.list(serializer()),
+    parameters: parameters(meta: meta),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "CREATE post SET meta = $meta;\n"
+
+pub const query_node = [
+  node.Create(
+    only: False,
+    target: "post",
+    set: [
+      node.BinaryOperator(
+        lhs: node.Identifier("meta"),
+        operator: node.Equal,
+        rhs: node.Parameter("meta"),
+      ),
+    ],
+  ),
+]
