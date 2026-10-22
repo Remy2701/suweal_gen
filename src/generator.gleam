@@ -1319,7 +1319,7 @@ fn do_update_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.Update(target:, set:, where:) = node
+  let assert node.Update(only:, target:, set:, where:) = node
 
   use table_info <- result.try(
     dict.get(tables, target)
@@ -1556,7 +1556,7 @@ fn do_delete_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.Delete(target:, where:) = node
+  let assert node.Delete(only:, target:, where:) = node
 
   case target {
     node.BinaryOperator(

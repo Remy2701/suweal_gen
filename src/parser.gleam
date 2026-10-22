@@ -1018,6 +1018,10 @@ fn do_update(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let #(only, input) = case input {
+    [Positioned(lexer.Only, ..), ..rest] -> #(True, rest)
+    _ -> #(False, input)
+  }
   use target, input <- consume_identifier(input)
   use input <- consume_keyword(lexer.Set, input)
   use set, input <- do_update_set_field([], input)
@@ -1026,10 +1030,7 @@ fn do_update(
     #(state, Next(#(expression, input)))
   })
 
-  #(
-    add_node(node.Update(target: target, set: set, where: where), state),
-    Next(input),
-  )
+  #(add_node(node.Update(only:, target:, set:, where:), state), Next(input))
 }
 
 fn do_create(
@@ -1051,13 +1052,21 @@ fn do_delete(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let input = case input {
+    [Positioned(lexer.From, ..), ..rest] -> rest
+    _ -> input
+  }
+  let #(only, input) = case input {
+    [Positioned(lexer.Only, ..), ..rest] -> #(True, rest)
+    _ -> #(False, input)
+  }
   use target, input <- consume_expression(input)
   use where, input <- on_token(lexer.Where, input, fn(input) {
     use expression, input <- consume_expression(input)
     #(state, Next(#(expression, input)))
   })
 
-  #(add_node(node.Delete(target: target, where: where), state), Next(input))
+  #(add_node(node.Delete(only:, target:, where:), state), Next(input))
 }
 
 fn do_relate(
