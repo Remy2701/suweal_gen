@@ -53,6 +53,7 @@ pub const query_string = "UPDATE user SET username = $username, email = $email W
 
 pub const query_node = [
   node.Update(
+    only: False,
     target: "user",
     set: [
       node.BinaryOperator(

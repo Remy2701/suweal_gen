@@ -1424,7 +1424,7 @@ fn do_update_node(
           "QueryResult",
           option.Some(namespace),
           "Update",
-          only: False,
+          only: only,
         ),
       )
     False -> module
@@ -1697,7 +1697,7 @@ fn do_delete_node(
               "QueryResult",
               option.Some(namespace),
               "Delete",
-              only: False,
+              only: only,
             ),
           )
         False -> module
@@ -1798,7 +1798,7 @@ fn do_delete_node(
               "QueryResult",
               option.Some(namespace),
               "Delete",
-              only: False,
+              only: only,
             ),
           )
         False -> module

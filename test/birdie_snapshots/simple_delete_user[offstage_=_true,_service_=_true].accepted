@@ -44,6 +44,7 @@ pub const query_string = "DELETE user WHERE id = $id;\n"
 
 pub const query_node = [
   node.Delete(
+    only: False,
     target: node.Identifier("user"),
     where: option.Some(
       node.BinaryOperator(
