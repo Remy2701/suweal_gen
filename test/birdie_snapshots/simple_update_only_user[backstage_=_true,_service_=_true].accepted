@@ -1,0 +1,77 @@
+---
+version: 2.0.2
+title: SimpleUpdateOnlyUser[backstage = True, service = True]
+file: ./test/sample/simple_update_only_user.gleam
+test_name: simple_update_only_user_with_service_test
+---
+import db/test/simple_user_table
+import gleam/option
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+pub type QueryResult = simple_user_table.User
+
+pub const serializer = simple_user_table.serializer
+
+pub const to_json = simple_user_table.to_json
+
+pub fn parameters(
+  username username: String,
+  email email: String,
+  id id: identifier.Identifier(simple_user_table.User),
+) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("username", surreal_ql.String(username)),
+    #("email", surreal_ql.String(email)),
+    #("id", surreal_ql.Raw(identifier.to_string(id))),
+  ]
+}
+
+pub fn query(
+  username username: String,
+  email email: String,
+  id id: identifier.Identifier(simple_user_table.User),
+) -> query.Query(QueryResult, option.Option(QueryResult)) {
+  query.query(
+    resource: simple_user_table.table_name,
+    operation_type: suweal_service.Update,
+    query: query_node,
+    serializer: serializer,
+    parameters: parameters(username: username, email: email, id: id),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "UPDATE ONLY user SET username = $username, email = $email WHERE id = $id;\n"
+
+pub const query_node = [
+  node.Update(
+    only: True,
+    target: "user",
+    set: [
+      node.BinaryOperator(
+        lhs: node.Identifier("username"),
+        operator: node.Equal,
+        rhs: node.Parameter("username"),
+      ),
+      node.BinaryOperator(
+        lhs: node.Identifier("email"),
+        operator: node.Equal,
+        rhs: node.Parameter("email"),
+      ),
+    ],
+    where: option.Some(
+      node.BinaryOperator(
+        lhs: node.Identifier("id"),
+        operator: node.Equal,
+        rhs: node.Parameter("id"),
+      ),
+    ),
+  ),
+]
