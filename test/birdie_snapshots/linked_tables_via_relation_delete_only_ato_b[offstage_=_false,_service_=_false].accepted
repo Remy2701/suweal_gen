@@ -1,0 +1,56 @@
+---
+version: 2.0.2
+title: LinkedTablesViaRelationDeleteOnlyAtoB[offstage = False, service = False]
+file: ./test/sample/linked_tables_via_relation_delete_only.gleam
+test_name: linked_tables_via_relation_delete_only_a_to_b_test
+---
+import db/test/linked_table_a
+import db/test/linked_table_b
+import db/test/linked_table_c
+import gleam/dynamic/decode
+import gleam/json
+import gleam/option
+import suweal/identifier
+import suweal/node
+import suweal/record
+import suweal/surreal_ql
+
+pub type QueryResult = Nil
+
+pub const to_json = json.null
+
+pub fn decoder() {
+  decode.success(Nil)
+}
+
+pub fn parameters(
+  a a: identifier.Identifier(linked_table_a.A),
+  b b: identifier.Identifier(linked_table_b.B),
+) -> List(#(String, surreal_ql.SurrealQL)) {
+  [
+    #("a", surreal_ql.Raw(identifier.to_string(a))),
+    #("b", surreal_ql.Raw(identifier.to_string(b))),
+  ]
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DELETE ONLY $a->c->$b;\n"
+
+pub const query_node = [
+  node.Delete(
+    only: True,
+    target: node.BinaryOperator(
+      lhs: node.BinaryOperator(
+        lhs: node.Parameter("a"),
+        operator: node.RelationTo,
+        rhs: node.Identifier("c"),
+      ),
+      operator: node.RelationTo,
+      rhs: node.Parameter("b"),
+    ),
+    where: option.None,
+  ),
+]
