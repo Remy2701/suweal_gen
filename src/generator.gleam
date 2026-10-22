@@ -1560,6 +1560,196 @@ fn do_delete_node(
 
   case target {
     node.BinaryOperator(
+      lhs: node.BinaryOperator(
+        lhs: from,
+        operator: node.RelationTo,
+        rhs: node.Identifier(name),
+      ),
+      operator: node.RelationTo,
+      rhs: to,
+    ) -> {
+      use table_info <- result.try(
+        dict.get(tables, name)
+        |> result.replace_error("Unknown table for update: " <> name),
+      )
+
+      let path =
+        result.unwrap(string.split_once(table_info.path, "src/"), #("", "")).1
+      let path = string.split(path, "/")
+      let namespace = list.last(path) |> result.unwrap("")
+
+      let module =
+        module.root.create()
+        |> module.root.add(
+          module.const_definition.create("QueryResult", module.literal.nil)
+          |> module.const_definition.as_type()
+          |> module.const_definition.public(),
+        )
+        |> module.root.add(
+          module.const_definition.create(
+            "to_json",
+            module.binop.access(
+              module.identifier.create("json"),
+              module.identifier.create("null"),
+            ),
+          )
+          |> module.const_definition.public(),
+        )
+        |> module.add_import(["gleam", "json"])
+
+      let module = case config.offstage {
+        True ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("serializer")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("serialize"),
+                module.identifier.create("nil"),
+              )),
+            ),
+          )
+          |> module.add_import(["offstage", "dynamic", "serialize"])
+        False ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("decoder")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("decode"),
+                module.identifier.create("success"),
+              ))
+              |> module.function_call.add(module.literal.nil),
+            ),
+          )
+          |> module.add_import(["gleam", "dynamic", "decode"])
+      }
+
+      let module =
+        retrieve_dependencies(module, table_info.fields, tables)
+        |> module.add_import(path)
+
+      let in =
+        table_info.fields
+        |> list.find(fn(f) { f.name == "in" })
+        |> result.map(fn(f) {
+          case f.type_ {
+            surreal_type.Record(record) ->
+              case string.contains(record, ".") {
+                True ->
+                  extractor.TableField(
+                    ..f,
+                    type_: surreal_type.Identifier(record),
+                  )
+                _ -> {
+                  dict.get(tables, string.lowercase(record))
+                  |> result.map(fn(info) {
+                    extractor.TableField(
+                      ..f,
+                      type_: surreal_type.Identifier(
+                        id_case.namespace_of(info.path)
+                        <> "."
+                        <> id_case.to_pascal_case(info.name).value,
+                      ),
+                    )
+                  })
+                  |> result.unwrap(f)
+                }
+              }
+            _ -> f
+          }
+        })
+        |> result.unwrap(
+          extractor.TableField(
+            dependencies: [],
+            name: "in",
+            type_: surreal_type.Record("Nil"),
+            linked_enum: option.None,
+            object_fields: [],
+          ),
+        )
+
+      let out =
+        table_info.fields
+        |> list.find(fn(f) { f.name == "out" })
+        |> result.map(fn(f) {
+          case f.type_ {
+            surreal_type.Record(record) ->
+              case string.contains(record, ".") {
+                True ->
+                  extractor.TableField(
+                    ..f,
+                    type_: surreal_type.Identifier(record),
+                  )
+                _ -> {
+                  dict.get(tables, string.lowercase(record))
+                  |> result.map(fn(info) {
+                    extractor.TableField(
+                      ..f,
+                      type_: surreal_type.Identifier(
+                        id_case.namespace_of(info.path)
+                        <> "."
+                        <> id_case.to_pascal_case(info.name).value,
+                      ),
+                    )
+                  })
+                  |> result.unwrap(f)
+                }
+              }
+            _ -> f
+          }
+        })
+        |> result.unwrap(
+          extractor.TableField(
+            dependencies: [],
+            name: "out",
+            type_: surreal_type.Record("Nil"),
+            linked_enum: option.None,
+            object_fields: [],
+          ),
+        )
+
+      let parameters =
+        list.filter_map(
+          [#(from, Ok(in.type_)), #(to, Ok(out.type_))]
+            |> list.append(case where {
+              option.Some(item) -> [#(item, Ok(surreal_type.Bool))]
+              _ -> []
+            }),
+          fn(item) {
+            extract_parameters(item.0, item.1, table_info, tables, namespace)
+          },
+        )
+        |> list.flatten()
+        |> complete_parameter_extraction()
+
+      let module = case parameters {
+        [] -> module
+        _ -> module.root.add(module, parameters_builder.generate(parameters))
+      }
+
+      let module = case config.service {
+        True ->
+          module.root.add(
+            module,
+            query_builder.generate(
+              parameters,
+              "QueryResult",
+              option.Some(namespace),
+              "Delete",
+              only: only,
+            ),
+          )
+        False -> module
+      }
+
+      Ok(module)
+    }
+    node.BinaryOperator(
       lhs: from,
       operator: node.RelationTo,
       rhs: node.Identifier(name),
@@ -1672,6 +1862,152 @@ fn do_delete_node(
       let parameters =
         list.filter_map(
           [#(from, Ok(in.type_))]
+            |> list.append(case where {
+              option.Some(item) -> [#(item, Ok(surreal_type.Bool))]
+              _ -> []
+            }),
+          fn(item) {
+            extract_parameters(item.0, item.1, table_info, tables, namespace)
+          },
+        )
+        |> list.flatten()
+        |> complete_parameter_extraction()
+
+      let module = case parameters {
+        [] -> module
+        _ -> module.root.add(module, parameters_builder.generate(parameters))
+      }
+
+      let module = case config.service {
+        True ->
+          module.root.add(
+            module,
+            query_builder.generate(
+              parameters,
+              "QueryResult",
+              option.Some(namespace),
+              "Delete",
+              only: only,
+            ),
+          )
+        False -> module
+      }
+
+      Ok(module)
+    }
+    node.BinaryOperator(
+      lhs: to,
+      operator: node.RelationFrom,
+      rhs: node.Identifier(name),
+    ) -> {
+      use table_info <- result.try(
+        dict.get(tables, name)
+        |> result.replace_error("Unknown table for update: " <> name),
+      )
+
+      let path =
+        result.unwrap(string.split_once(table_info.path, "src/"), #("", "")).1
+      let path = string.split(path, "/")
+      let namespace = list.last(path) |> result.unwrap("")
+
+      let module =
+        module.root.create()
+        |> module.root.add(
+          module.const_definition.create("QueryResult", module.literal.nil)
+          |> module.const_definition.as_type()
+          |> module.const_definition.public(),
+        )
+        |> module.root.add(
+          module.const_definition.create(
+            "to_json",
+            module.binop.access(
+              module.identifier.create("json"),
+              module.identifier.create("null"),
+            ),
+          )
+          |> module.const_definition.public(),
+        )
+        |> module.add_import(["gleam", "json"])
+
+      let module = case config.offstage {
+        True ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("serializer")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("serialize"),
+                module.identifier.create("nil"),
+              )),
+            ),
+          )
+          |> module.add_import(["offstage", "dynamic", "serialize"])
+        False ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("decoder")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("decode"),
+                module.identifier.create("success"),
+              ))
+              |> module.function_call.add(module.literal.nil),
+            ),
+          )
+          |> module.add_import(["gleam", "dynamic", "decode"])
+      }
+
+      let module =
+        retrieve_dependencies(module, table_info.fields, tables)
+        |> module.add_import(path)
+
+      let out =
+        table_info.fields
+        |> list.find(fn(f) { f.name == "out" })
+        |> result.map(fn(f) {
+          case f.type_ {
+            surreal_type.Record(record) ->
+              case string.contains(record, ".") {
+                True ->
+                  extractor.TableField(
+                    ..f,
+                    type_: surreal_type.Identifier(record),
+                  )
+                _ -> {
+                  dict.get(tables, string.lowercase(record))
+                  |> result.map(fn(info) {
+                    extractor.TableField(
+                      ..f,
+                      type_: surreal_type.Identifier(
+                        id_case.namespace_of(info.path)
+                        <> "."
+                        <> id_case.to_pascal_case(info.name).value,
+                      ),
+                    )
+                  })
+                  |> result.unwrap(f)
+                }
+              }
+            _ -> f
+          }
+        })
+        |> result.unwrap(
+          extractor.TableField(
+            dependencies: [],
+            name: "out",
+            type_: surreal_type.Record("Nil"),
+            linked_enum: option.None,
+            object_fields: [],
+          ),
+        )
+
+      let parameters =
+        list.filter_map(
+          [#(to, Ok(out.type_))]
             |> list.append(case where {
               option.Some(item) -> [#(item, Ok(surreal_type.Bool))]
               _ -> []
