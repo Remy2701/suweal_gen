@@ -1,0 +1,57 @@
+---
+version: 2.0.2
+title: SimpleDeleteOnlyUser[offstage = True, service = True]
+file: ./test/sample/simple_delete_only_user.gleam
+test_name: simple_delete_only_user_with_service_test
+---
+import db/test/simple_user_table
+import gleam/json
+import gleam/option
+import offstage/dynamic/serialize
+import suweal/identifier
+import suweal/node
+import suweal/surreal_ql
+import suweal_service
+import suweal_service/query
+
+pub type QueryResult = Nil
+
+pub const to_json = json.null
+
+pub fn serializer() {
+  serialize.nil()
+}
+
+pub fn parameters(id id: identifier.Identifier(simple_user_table.User)) -> List(#(String, surreal_ql.SurrealQL)) {
+  [#("id", surreal_ql.Raw(identifier.to_string(id)))]
+}
+
+pub fn query(id id: identifier.Identifier(simple_user_table.User)) -> query.Query(QueryResult, option.Option(QueryResult)) {
+  query.query(
+    resource: simple_user_table.table_name,
+    operation_type: suweal_service.Delete,
+    query: query_node,
+    serializer: serializer,
+    parameters: parameters(id: id),
+  )
+}
+
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                 Raw query                                  //
+// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub const query_string = "DELETE ONLY user WHERE id = $id;\n"
+
+pub const query_node = [
+  node.Delete(
+    only: True,
+    target: node.Identifier("user"),
+    where: option.Some(
+      node.BinaryOperator(
+        lhs: node.Identifier("id"),
+        operator: node.Equal,
+        rhs: node.Parameter("id"),
+      ),
+    ),
+  ),
+]
