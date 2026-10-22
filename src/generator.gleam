@@ -1705,6 +1705,107 @@ fn do_delete_node(
 
       Ok(module)
     }
+    node.Identifier(target) -> {
+      use table_info <- result.try(
+        dict.get(tables, target)
+        |> result.map_error(fn(_) { "Unknown table for create: " <> target }),
+      )
+
+      let path =
+        result.unwrap(string.split_once(table_info.path, "src/"), #("", "")).1
+      let path = string.split(path, "/")
+      let namespace = list.last(path) |> result.unwrap("")
+
+      let module =
+        module.root.create()
+        |> module.root.add(
+          module.const_definition.create("QueryResult", module.literal.nil)
+          |> module.const_definition.as_type()
+          |> module.const_definition.public(),
+        )
+        |> module.root.add(
+          module.const_definition.create(
+            "to_json",
+            module.binop.access(
+              module.identifier.create("json"),
+              module.identifier.create("null"),
+            ),
+          )
+          |> module.const_definition.public(),
+        )
+        |> module.add_import(["gleam", "json"])
+
+      let module = case config.offstage {
+        True ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("serializer")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("serialize"),
+                module.identifier.create("nil"),
+              )),
+            ),
+          )
+          |> module.add_import(["offstage", "dynamic", "serialize"])
+        False ->
+          module
+          |> module.root.add(
+            module.function_definition.create()
+            |> module.function_definition.public()
+            |> module.function_definition.with_name("decoder")
+            |> module.function_definition.add(
+              module.function_call.create(module.binop.access(
+                module.identifier.create("decode"),
+                module.identifier.create("success"),
+              ))
+              |> module.function_call.add(module.literal.nil),
+            ),
+          )
+          |> module.add_import(["gleam", "dynamic", "decode"])
+      }
+
+      let module =
+        retrieve_dependencies(module, table_info.fields, tables)
+        |> module.add_import(path)
+
+      let parameters =
+        list.filter_map(
+          case where {
+            option.Some(item) -> [#(item, Ok(surreal_type.Bool))]
+            _ -> []
+          },
+          fn(item) {
+            extract_parameters(item.0, item.1, table_info, tables, namespace)
+          },
+        )
+        |> list.flatten()
+        |> complete_parameter_extraction()
+
+      let module = case parameters {
+        [] -> module
+        _ -> module.root.add(module, parameters_builder.generate(parameters))
+      }
+
+      let module = case config.service {
+        True ->
+          module.root.add(
+            module,
+            query_builder.generate(
+              parameters,
+              "QueryResult",
+              option.Some(namespace),
+              "Delete",
+              only: False,
+            ),
+          )
+        False -> module
+      }
+
+      Ok(module)
+    }
     _ -> {
       io.println(
         "Warning: unsupported delete target: " <> node.to_string(target),
