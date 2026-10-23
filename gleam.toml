@@ -1,5 +1,5 @@
 name = "suweal_gen"
-version = "0.4.2"
+version = "0.4.3"
 
 description = "Generate gleam type definition, decoders and more from .surql"
 licences = ["Apache-2.0"]
