@@ -293,7 +293,7 @@ fn consume_value(
       use input <-
         case with_curly_bracket {
           True -> consume_keyword(lexer.LeftCurlyBracket, input, _)
-          False -> consume_keyword(lexer.Then, input, _)
+          False -> fn(next) { next(input) }
         }
       use input <- consume_keyword(lexer.End, input)
       use input <-
