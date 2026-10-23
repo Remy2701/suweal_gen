@@ -69,6 +69,7 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
                 <> "_to_surql",
               )
               |> module.function_call.create()
+              |> module.function_call.add(module.identifier.create(entry.name))
             }
             _ -> {
               surreal_type.value_to_gleam_module(

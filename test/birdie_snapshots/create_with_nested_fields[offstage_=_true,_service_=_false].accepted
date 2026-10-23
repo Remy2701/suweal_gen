@@ -15,7 +15,7 @@ pub const serializer = table_with_nested_fields.serializer
 pub const to_json = table_with_nested_fields.to_json
 
 pub fn parameters(meta meta: table_with_nested_fields.Meta) -> List(#(String, surreal_ql.SurrealQL)) {
-  [#("meta", table_with_nested_fields.meta_to_surql())]
+  [#("meta", table_with_nested_fields.meta_to_surql(meta))]
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
