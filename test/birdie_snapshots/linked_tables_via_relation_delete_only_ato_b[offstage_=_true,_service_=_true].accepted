@@ -43,7 +43,7 @@ pub fn query(
     resource: linked_table_c.table_name,
     operation_type: suweal_service.Delete,
     query: query_node,
-    serializer: serializer,
+    serializer: serializer(),
     parameters: parameters(a: a, b: b),
   )
 }

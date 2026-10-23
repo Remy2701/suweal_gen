@@ -108,12 +108,15 @@ pub fn generate(
     |> module.function_call.add_with_alias("serializer", case only {
       True ->
         case operation_type, prefix {
-          Delete, _ | _, None -> module.identifier.create("serializer")
+          Delete, _ | _, None ->
+            module.identifier.create("serializer")
+            |> module.function_call.create()
           _, Some(prefix) ->
             module.binop.access(
               module.identifier.create(prefix),
               module.identifier.create("serializer"),
             )
+            |> module.function_call.create()
         }
       False ->
         offstage_serialize_module.list_of(

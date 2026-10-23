@@ -34,7 +34,7 @@ pub fn query(a a: identifier.Identifier(linked_table_a.A)) -> query.Query(QueryR
     resource: linked_table_c.table_name,
     operation_type: suweal_service.Delete,
     query: query_node,
-    serializer: serializer,
+    serializer: serializer(),
     parameters: parameters(a: a),
   )
 }

@@ -31,7 +31,7 @@ pub fn query(id id: identifier.Identifier(simple_user_table.User)) -> query.Quer
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Delete,
     query: query_node,
-    serializer: serializer,
+    serializer: serializer(),
     parameters: parameters(id: id),
   )
 }
