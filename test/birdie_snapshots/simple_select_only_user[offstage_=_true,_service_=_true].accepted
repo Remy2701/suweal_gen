@@ -21,7 +21,7 @@ pub const to_json = simple_user_table.to_json
 
 pub const serializer = simple_user_table.serializer
 
-pub fn query() -> query.Query(QueryResult, option.Option(QueryResult)) {
+pub fn query() -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Read,
@@ -29,6 +29,7 @@ pub fn query() -> query.Query(QueryResult, option.Option(QueryResult)) {
     serializer: simple_user_table.serializer(),
     parameters: parameters(),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

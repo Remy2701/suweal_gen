@@ -34,7 +34,7 @@ pub fn query(
   username username: String,
   email email: String,
   id id: identifier.Identifier(simple_user_table.User),
-) -> query.Query(QueryResult, option.Option(QueryResult)) {
+) -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Update,
@@ -42,6 +42,7 @@ pub fn query(
     serializer: simple_user_table.serializer(),
     parameters: parameters(username: username, email: email, id: id),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

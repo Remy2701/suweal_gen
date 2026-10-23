@@ -38,7 +38,7 @@ pub fn parameters(
 pub fn query(
   a a: identifier.Identifier(linked_table_a.A),
   b b: identifier.Identifier(linked_table_b.B),
-) -> query.Query(QueryResult, option.Option(QueryResult)) {
+) -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: linked_table_c.table_name,
     operation_type: suweal_service.Delete,
@@ -46,6 +46,7 @@ pub fn query(
     serializer: serializer(),
     parameters: parameters(a: a, b: b),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

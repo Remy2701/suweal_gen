@@ -1,4 +1,5 @@
 import common
+import gleam/function
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
@@ -17,6 +18,72 @@ pub type OperationType {
   Read
   Update
   Delete
+}
+
+fn query_content(
+  parameters parameters: List(common.ParameterProperty),
+  prefix prefix: option.Option(String),
+  operation_type operation_type: OperationType,
+  only only: Bool,
+) {
+  module.binop.access(
+    module.identifier.create("query"),
+    module.identifier.create("query"),
+  )
+  |> module.function_call.create()
+  |> module.function_call.add_with_alias("resource", case prefix {
+    Some(prefix) ->
+      module.binop.access(
+        module.identifier.create(prefix),
+        module.identifier.create("table_name"),
+      )
+    None -> module.identifier.create("table_name")
+  })
+  |> module.function_call.add_with_alias(
+    "operation_type",
+    module.binop.access(
+      module.identifier.create("suweal_service"),
+      module.identifier.create(case operation_type {
+        Create -> "Create"
+        Read -> "Read"
+        Update -> "Update"
+        Delete -> "Delete"
+      }),
+    ),
+  )
+  |> module.function_call.add_with_alias(
+    "query",
+    module.identifier.create("query_node"),
+  )
+  |> module.function_call.add_with_alias("serializer", case only {
+    True ->
+      case operation_type, prefix {
+        Delete, _ | _, None ->
+          module.identifier.create("serializer")
+          |> module.function_call.create()
+        _, Some(prefix) ->
+          module.binop.access(
+            module.identifier.create(prefix),
+            module.identifier.create("serializer"),
+          )
+          |> module.function_call.create()
+      }
+    False ->
+      offstage_serialize_module.list_of(
+        module.function_call.create(module.identifier.create("serializer")),
+      )
+  })
+  |> module.function_call.add_with_alias(
+    "parameters",
+    module.function_call.create(module.identifier.create("parameters"))
+      |> list.fold(parameters, _, fn(module, entry) {
+        module.function_call.add_with_alias(
+          module,
+          entry.name,
+          module.identifier.create(entry.name),
+        )
+      }),
+  )
 }
 
 pub fn generate(
@@ -42,14 +109,13 @@ pub fn generate(
             module.function_call.create(module.identifier.create("List"))
             |> module.function_call.add(module.identifier.create(result_type))
         })
-        |> module.function_call.add(
-          option_module.type_(case only {
-            True -> module.identifier.create(result_type)
-            False ->
-              module.function_call.create(module.identifier.create("List"))
-              |> module.function_call.add(module.identifier.create(result_type))
-          }),
-        ),
+        |> module.function_call.add(case only {
+          True -> module.identifier.create(result_type)
+          False ->
+            module.function_call.create(module.identifier.create("List"))
+            |> module.function_call.add(module.identifier.create(result_type))
+            |> option_module.type_
+        }),
       ),
     fn(module, entry) {
       module.function_definition.add_aliased_parameter(
@@ -76,64 +142,17 @@ pub fn generate(
     },
   )
   |> module.function_definition.add(
-    module.binop.access(
-      module.identifier.create("query"),
-      module.identifier.create("query"),
-    )
-    |> module.function_call.create()
-    |> module.function_call.add_with_alias("resource", case prefix {
-      Some(prefix) ->
-        module.binop.access(
-          module.identifier.create(prefix),
-          module.identifier.create("table_name"),
-        )
-      None -> module.identifier.create("table_name")
-    })
-    |> module.function_call.add_with_alias(
-      "operation_type",
-      module.binop.access(
-        module.identifier.create("suweal_service"),
-        module.identifier.create(case operation_type {
-          Create -> "Create"
-          Read -> "Read"
-          Update -> "Update"
-          Delete -> "Delete"
-        }),
-      ),
-    )
-    |> module.function_call.add_with_alias(
-      "query",
-      module.identifier.create("query_node"),
-    )
-    |> module.function_call.add_with_alias("serializer", case only {
-      True ->
-        case operation_type, prefix {
-          Delete, _ | _, None ->
-            module.identifier.create("serializer")
-            |> module.function_call.create()
-          _, Some(prefix) ->
-            module.binop.access(
-              module.identifier.create(prefix),
-              module.identifier.create("serializer"),
-            )
-            |> module.function_call.create()
-        }
-      False ->
-        offstage_serialize_module.list_of(
-          module.function_call.create(module.identifier.create("serializer")),
-        )
-    })
-    |> module.function_call.add_with_alias(
-      "parameters",
-      module.function_call.create(module.identifier.create("parameters"))
-        |> list.fold(parameters, _, fn(module, entry) {
-          module.function_call.add_with_alias(
-            module,
-            entry.name,
-            module.identifier.create(entry.name),
-          )
-        }),
-    ),
+    query_content(parameters:, prefix:, operation_type:, only:)
+    |> case only {
+      True -> module.binop.pipe(
+        _,
+        module.function_call.create(module.binop.access(
+          module.identifier.create("query"),
+          module.identifier.create("some"),
+        )),
+      )
+      False -> function.identity
+    },
   )
   |> module.add_import(["suweal", "surreal_ql"])
   |> module.add_import(["suweal_service", "query"])

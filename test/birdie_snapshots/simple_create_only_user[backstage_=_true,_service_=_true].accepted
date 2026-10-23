@@ -5,7 +5,6 @@ file: ./test/sample/simple_create_only_user.gleam
 test_name: simple_create_user_with_service_test
 ---
 import db/test/simple_user_table
-import gleam/option
 import suweal/node
 import suweal/surreal_ql
 import suweal_service
@@ -24,7 +23,7 @@ pub fn parameters(username username: String, email email: String) -> List(#(Stri
   ]
 }
 
-pub fn query(username username: String, email email: String) -> query.Query(QueryResult, option.Option(QueryResult)) {
+pub fn query(username username: String, email email: String) -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Create,
@@ -32,6 +31,7 @@ pub fn query(username username: String, email email: String) -> query.Query(Quer
     serializer: simple_user_table.serializer(),
     parameters: parameters(username: username, email: email),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

@@ -26,7 +26,7 @@ pub fn parameters(id id: identifier.Identifier(simple_user_table.User)) -> List(
   [#("id", surreal_ql.Raw(identifier.to_string(id)))]
 }
 
-pub fn query(id id: identifier.Identifier(simple_user_table.User)) -> query.Query(QueryResult, option.Option(QueryResult)) {
+pub fn query(id id: identifier.Identifier(simple_user_table.User)) -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Delete,
@@ -34,6 +34,7 @@ pub fn query(id id: identifier.Identifier(simple_user_table.User)) -> query.Quer
     serializer: serializer(),
     parameters: parameters(id: id),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

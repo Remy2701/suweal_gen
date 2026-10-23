@@ -29,7 +29,7 @@ pub fn parameters(a a: identifier.Identifier(linked_table_a.A)) -> List(#(String
   [#("a", surreal_ql.Raw(identifier.to_string(a)))]
 }
 
-pub fn query(a a: identifier.Identifier(linked_table_a.A)) -> query.Query(QueryResult, option.Option(QueryResult)) {
+pub fn query(a a: identifier.Identifier(linked_table_a.A)) -> query.Query(QueryResult, QueryResult) {
   query.query(
     resource: linked_table_c.table_name,
     operation_type: suweal_service.Delete,
@@ -37,6 +37,7 @@ pub fn query(a a: identifier.Identifier(linked_table_a.A)) -> query.Query(QueryR
     serializer: serializer(),
     parameters: parameters(a: a),
   )
+  |> query.some()
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
