@@ -29,7 +29,7 @@ pub fn query(username username: String, email email: String) -> query.Query(Quer
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Create,
     query: query_node,
-    serializer: serializer,
+    serializer: simple_user_table.serializer,
     parameters: parameters(username: username, email: email),
   )
 }

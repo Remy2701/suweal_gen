@@ -39,7 +39,7 @@ pub fn query(
     resource: simple_user_table.table_name,
     operation_type: suweal_service.Update,
     query: query_node,
-    serializer: serializer,
+    serializer: simple_user_table.serializer,
     parameters: parameters(username: username, email: email, id: id),
   )
 }

@@ -12,11 +12,18 @@ import suweal/surreal_type
 //                                             Query                                             //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+pub type OperationType {
+  Create
+  Read
+  Update
+  Delete
+}
+
 pub fn generate(
   parameters parameters: List(common.ParameterProperty),
   result_type result_type: String,
   prefix prefix: option.Option(String),
-  operation_type operation_type: String,
+  operation_type operation_type: OperationType,
   only only: Bool,
 ) -> module.Module {
   list.fold(
@@ -86,7 +93,12 @@ pub fn generate(
       "operation_type",
       module.binop.access(
         module.identifier.create("suweal_service"),
-        module.identifier.create(operation_type),
+        module.identifier.create(case operation_type {
+          Create -> "Create"
+          Read -> "Read"
+          Update -> "Update"
+          Delete -> "Delete"
+        }),
       ),
     )
     |> module.function_call.add_with_alias(
@@ -94,7 +106,15 @@ pub fn generate(
       module.identifier.create("query_node"),
     )
     |> module.function_call.add_with_alias("serializer", case only {
-      True -> module.identifier.create("serializer")
+      True ->
+        case operation_type, prefix {
+          Delete, _ | _, None -> module.identifier.create("serializer")
+          _, Some(prefix) ->
+            module.binop.access(
+              module.identifier.create(prefix),
+              module.identifier.create("serializer"),
+            )
+        }
       False ->
         offstage_serialize_module.list_of(
           module.function_call.create(module.identifier.create("serializer")),

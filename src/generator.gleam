@@ -1300,7 +1300,7 @@ fn do_select_node(
           parameters,
           "QueryResult",
           option.Some(namespace),
-          "Read",
+          query_builder.Read,
           only: only,
         ),
       )
@@ -1423,7 +1423,7 @@ fn do_update_node(
           parameters,
           "QueryResult",
           option.Some(namespace),
-          "Update",
+          query_builder.Update,
           only: only,
         ),
       )
@@ -1537,7 +1537,7 @@ fn do_create_node(
           parameters,
           "QueryResult",
           option.Some(namespace),
-          "Create",
+          query_builder.Create,
           only: only,
         ),
       )
@@ -1740,7 +1740,7 @@ fn do_delete_node(
               parameters,
               "QueryResult",
               option.Some(namespace),
-              "Delete",
+              query_builder.Delete,
               only: only,
             ),
           )
@@ -1886,7 +1886,7 @@ fn do_delete_node(
               parameters,
               "QueryResult",
               option.Some(namespace),
-              "Delete",
+              query_builder.Delete,
               only: only,
             ),
           )
@@ -2032,7 +2032,7 @@ fn do_delete_node(
               parameters,
               "QueryResult",
               option.Some(namespace),
-              "Delete",
+              query_builder.Delete,
               only: only,
             ),
           )
@@ -2133,7 +2133,7 @@ fn do_delete_node(
               parameters,
               "QueryResult",
               option.Some(namespace),
-              "Delete",
+              query_builder.Delete,
               only: only,
             ),
           )
@@ -2330,7 +2330,7 @@ fn do_relate_node(
           parameters,
           "QueryResult",
           option.Some(namespace),
-          "Create",
+          query_builder.Create,
           only: False,
         ),
       )

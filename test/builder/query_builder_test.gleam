@@ -103,7 +103,7 @@ pub fn query_builder_generation_test() {
       ],
       result_type: "ResultType",
       prefix: option.None,
-      operation_type: "Create",
+      operation_type: query_builder.Create,
       only: False,
     )
 
@@ -208,7 +208,7 @@ pub fn query_builder_generation_with_prefix_test() {
       ],
       result_type: "ResultType",
       prefix: option.Some("prefix"),
-      operation_type: "Create",
+      operation_type: query_builder.Create,
       only: False,
     )
 
