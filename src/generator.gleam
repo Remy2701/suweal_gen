@@ -245,7 +245,7 @@ fn resolve_dependencies(
         list.append(fields, [field]),
       )
       surreal_type.Object -> #(
-        module.add_import(module, ["json_value"]),
+        module.add_import(module, ["pont", "value"]),
         list.append(fields, [field]),
       )
       surreal_type.Point -> #(
@@ -1618,7 +1618,7 @@ fn do_delete_node(
               )),
             ),
           )
-          |> module.add_import(["offstage", "dynamic", "serialize"])
+          |> module.add_import(["pont", "serialize"])
         False ->
           module
           |> module.root.add(
@@ -1802,7 +1802,7 @@ fn do_delete_node(
               )),
             ),
           )
-          |> module.add_import(["offstage", "dynamic", "serialize"])
+          |> module.add_import(["pont", "serialize"])
         False ->
           module
           |> module.root.add(
@@ -1947,7 +1947,7 @@ fn do_delete_node(
               )),
             ),
           )
-          |> module.add_import(["offstage", "dynamic", "serialize"])
+          |> module.add_import(["pont", "serialize"])
         False ->
           module
           |> module.root.add(
@@ -2088,7 +2088,7 @@ fn do_delete_node(
               )),
             ),
           )
-          |> module.add_import(["offstage", "dynamic", "serialize"])
+          |> module.add_import(["pont", "serialize"])
         False ->
           module
           |> module.root.add(

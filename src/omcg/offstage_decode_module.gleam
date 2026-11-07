@@ -7,7 +7,7 @@ pub fn decoder(of: Module) -> Module {
   )
   |> module.function_call.create()
   |> module.function_call.add(of)
-  |> module.add_import(["offstage", "dynamic", "decode"])
+  |> module.add_import(["pont", "decode"])
 }
 
 pub fn string_enum(first: Module, rest: Module) -> Module {
@@ -18,5 +18,5 @@ pub fn string_enum(first: Module, rest: Module) -> Module {
   |> module.function_call.create()
   |> module.function_call.add(first)
   |> module.function_call.add(rest)
-  |> module.add_import(["offstage", "dynamic", "decode"])
+  |> module.add_import(["pont", "decode"])
 }

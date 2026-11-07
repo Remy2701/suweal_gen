@@ -314,15 +314,16 @@ fn decoder_of_object(config: common.Configuration) -> module.Module {
 }
 
 fn offstage_serializer_of_object() -> module.Module {
-  offstage_serialize_module.json_value()
+  offstage_serialize_module.value()
 }
 
 fn gleam_decoder_of_object() -> module.Module {
   module.function_call.create(module.binop.access(
-    module.identifier.create("json_value"),
-    module.identifier.create("decoder"),
+    module.identifier.create("serialize"),
+    module.identifier.create("value"),
   ))
-  |> module.add_import(["json_value"])
+  |> module.binop.access(module.identifier.create("decoder"))
+  |> module.add_import(["pont", "serialize"])
 }
 
 fn decoder_of_option(
@@ -527,7 +528,7 @@ fn offstage_generate_type_serializer(
       ),
     ]),
   ))
-  |> module.add_import(["offstage", "dynamic", "serialize"])
+  |> module.add_import(["pont", "serialize"])
 }
 
 fn gleam_generate_type_decoder(

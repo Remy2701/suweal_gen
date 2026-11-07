@@ -139,11 +139,11 @@ fn generate_array_to_json(name: String, inner: SurrealType) {
 
 fn generate_object_to_json(name: String) {
   module.function_call.create(module.binop.access(
-    module.identifier.create("json_value"),
+    module.identifier.create("value"),
     module.identifier.create("to_json"),
   ))
   |> module.function_call.add(module.identifier.create(name))
-  |> module.add_import(["json_value"])
+  |> module.add_import(["pont", "value"])
 }
 
 fn generate_none_to_json() {
@@ -218,9 +218,9 @@ fn generate_offstage_type_to_json(
         module.identifier.create(prefix <> "serializer")
         |> module.function_call.create(),
       )
-      |> module.add_import(["offstage", "dynamic", "serialize"]),
+      |> module.add_import(["pont", "serialize"]),
     )
-    |> module.add_import(["offstage", "dynamic", "encode"]),
+    |> module.add_import(["pont", "encode"]),
   )
   |> module.add_import(["gleam", "json"])
 }

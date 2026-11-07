@@ -120,7 +120,7 @@ fn generate_to_surql_for_type(
     surreal_type.Object ->
       module.function_call.create(
         module.identifier.create("surreal_ql")
-        |> module.binop.access(module.identifier.create("from_json_value")),
+        |> module.binop.access(module.identifier.create("from_value")),
       )
       |> module.function_call.add(module.identifier.create(name))
     surreal_type.None ->
