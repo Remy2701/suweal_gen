@@ -16,6 +16,7 @@ pub fn simple_delete_only_user_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -44,6 +45,7 @@ pub fn simple_delete_only_user_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -72,6 +74,7 @@ pub fn simple_delete_only_user_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [

@@ -16,6 +16,7 @@ pub fn create_with_nested_fields_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -44,6 +45,7 @@ pub fn create_with_nested_fields_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -72,6 +74,7 @@ pub fn create_with_nested_fields_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -104,6 +107,7 @@ pub fn create_directly_with_nested_fields_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -132,6 +136,7 @@ pub fn create_directly_with_nested_fields_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -160,6 +165,7 @@ pub fn create_directly_with_nested_fields_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [

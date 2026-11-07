@@ -16,6 +16,7 @@ pub fn linked_tables_via_relation_delete_only_from_a_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -52,6 +53,7 @@ pub fn linked_tables_via_relation_delete_only_from_a_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -88,6 +90,7 @@ pub fn linked_tables_via_relation_delete_only_from_a_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -128,6 +131,7 @@ pub fn linked_tables_via_relation_delete_only_from_b_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -164,6 +168,7 @@ pub fn linked_tables_via_relation_delete_only_from_b_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -200,6 +205,7 @@ pub fn linked_tables_via_relation_delete_only_from_b_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -240,6 +246,7 @@ pub fn linked_tables_via_relation_delete_only_a_to_b_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -276,6 +283,7 @@ pub fn linked_tables_via_relation_delete_only_a_to_b_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -312,6 +320,7 @@ pub fn linked_tables_via_relation_delete_only_a_to_b_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [

@@ -9,7 +9,7 @@ import suweal/surreal_type
 pub fn type_decoder_generation_test() {
   let generated =
     type_decoder.generate(
-      common.Configuration(False, False, False, "./src/db/test"),
+      common.Configuration(False, False, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(
@@ -151,7 +151,7 @@ pub fn type_decoder_generation_test() {
 pub fn type_decoder_generation_with_prefix_test() {
   let generated =
     type_decoder.generate(
-      common.Configuration(False, False, False, "./src/db/test"),
+      common.Configuration(False, False, False, False, "./src/db/test"),
       "nested",
       [
         extractor.TableField(
@@ -191,7 +191,7 @@ pub fn type_decoder_generation_with_prefix_test() {
 pub fn type_decoder_generation_with_prefix_and_offstage_test() {
   let generated =
     type_decoder.generate(
-      common.Configuration(True, False, False, "./src/db/test"),
+      common.Configuration(True, False, False, False, "./src/db/test"),
       "nested",
       [
         extractor.TableField(
@@ -231,7 +231,7 @@ pub fn type_decoder_generation_with_prefix_and_offstage_test() {
 pub fn type_decoder_generation_with_offstage_test() {
   let generated =
     type_decoder.generate(
-      common.Configuration(True, False, False, "./src/db/test"),
+      common.Configuration(True, False, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(
@@ -376,7 +376,7 @@ pub fn type_decoder_generation_with_offstage_test() {
 pub fn type_decoder_generation_with_service_test() {
   let generated =
     type_decoder.generate(
-      common.Configuration(True, False, False, "./src/db/test"),
+      common.Configuration(True, False, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(

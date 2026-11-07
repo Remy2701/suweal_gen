@@ -96,13 +96,15 @@ pub fn version_config_to_json(config: VersionConfig) -> json.Json {
 
 pub type Configuration {
   Configuration(
-    // Flag indicating if the integration with offstage is enabled
+    /// Flag indicating if the integration with offstage is enabled
     offstage: Bool,
-    // Flag indicating if the integration with the suweal service is enabled
+    /// Flag indicating if the integration with the suweal service is enabled
     service: Bool,
-    // Flag indicating if versioning is enabled
+    /// Flag indicating if versioning is enabled
     versioning: Bool,
-    // The path supplied to this tool
+    /// Flag indicating if the generation should be forced, ignoring any checks
+    force: Bool,
+    /// The path supplied to this tool
     path: String,
   )
 }

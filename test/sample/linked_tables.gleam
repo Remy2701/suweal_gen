@@ -24,6 +24,7 @@ pub fn linked_tables_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -45,6 +46,7 @@ pub fn linked_tables_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -66,6 +68,7 @@ pub fn linked_tables_with_offstage_and_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [

@@ -6,6 +6,7 @@ import common
 import extractor
 import generator
 import gleam/bit_array
+import gleam/bool
 import gleam/crypto
 import gleam/dict
 import gleam/dynamic/decode
@@ -73,9 +74,16 @@ fn command() {
         use offstage <- clip.parameter
         use service <- clip.parameter
         use versioning <- clip.parameter
+        use force <- clip.parameter
         use path <- clip.parameter
 
-        GenCommand(common.Configuration(offstage:, service:, versioning:, path:))
+        GenCommand(common.Configuration(
+          offstage:,
+          service:,
+          versioning:,
+          force:,
+          path:,
+        ))
       })
         |> clip.flag(
           flag.new("offstage")
@@ -88,6 +96,10 @@ fn command() {
         |> clip.flag(
           flag.new("versioning")
           |> flag.help("Enable versioning"),
+        )
+        |> clip.flag(
+          flag.new("force")
+          |> flag.help("Force generation, ignoring any checks"),
         )
         |> clip.arg(
           arg.new("path")
@@ -247,10 +259,15 @@ fn compare_hashes(
   |> list.map(fn(entry) { entry.0 })
 }
 
+type ReadVersionResult {
+  NothingChanged(config: common.VersionsConfig, previous: Int)
+  ReadVersionResult(config: common.VersionsConfig, previous: Int)
+}
+
 fn read_versions(
   config: common.Configuration,
   hashes: List(#(String, String)),
-) -> Result(#(common.VersionsConfig, Int), Nil) {
+) -> Result(ReadVersionResult, Nil) {
   let versions =
     simplifile.read(config.path <> "/versions.json")
     |> result.replace_error(Nil)
@@ -262,8 +279,8 @@ fn read_versions(
   case versions, config.versioning {
     Error(_), True -> {
       io.println("Versioning was not enabled, enabling now...")
-      Ok(#(
-        common.VersionsConfig(
+      Ok(ReadVersionResult(
+        config: common.VersionsConfig(
           [
             common.VersionConfig(
               version: "v1",
@@ -276,7 +293,7 @@ fn read_versions(
           config.path <> "/migrations_",
           hashes,
         ),
-        0,
+        previous: 0,
       ))
     }
     Ok(version), _ -> {
@@ -294,7 +311,7 @@ fn read_versions(
       case different {
         [] -> {
           io.println("Nothing has changed!")
-          Ok(#(version, last_version.version_number))
+          Ok(NothingChanged(version, last_version.version_number))
         }
         _ -> {
           io.println(
@@ -302,8 +319,8 @@ fn read_versions(
             <> int.to_string(list.length(different))
             <> " different files",
           )
-          Ok(#(
-            common.VersionsConfig(
+          Ok(ReadVersionResult(
+            config: common.VersionsConfig(
               versions: [
                 common.VersionConfig(
                   version: "v" <> int.to_string(last_version.version_number + 1),
@@ -319,7 +336,7 @@ fn read_versions(
               migrations: version.migrations,
               files: hashes,
             ),
-            last_version.version_number,
+            previous: last_version.version_number,
           ))
         }
       }
@@ -359,10 +376,18 @@ fn gen_command(config: common.Configuration) {
   let assert Ok(files) = list_files(config.path, [])
   let assert Ok(hashes) = compute_file_hashes(files)
 
-  let #(versions, last_version) =
-    read_versions(config, hashes)
-    |> result.map(fn(value) { #(Ok(value.0), Ok(value.1)) })
-    |> result.unwrap(#(Error(Nil), Error(Nil)))
+  let assert Ok(read_versions) = read_versions(config, hashes)
+
+  let #(versions, last_version) = #(
+    read_versions.config,
+    read_versions.previous,
+  )
+
+  let skip_generation = case read_versions {
+    NothingChanged(..) if !config.force -> True
+    _ -> False
+  }
+  use <- bool.guard(skip_generation, Nil)
 
   // Read all *.surql files
   let assert Ok(files) =
@@ -382,20 +407,15 @@ fn gen_command(config: common.Configuration) {
     files
     |> list.try_each(fn(file) {
       let version_path =
-        result.map(last_version, fn(version) {
-          config.path
-          <> "/versions_/v"
-          <> int.to_string(version + 1)
-          <> string.remove_prefix(file.path, config.path)
-          <> ".gleam"
-        })
+        config.path
+        <> "/versions_/v"
+        <> int.to_string(last_version + 1)
+        <> string.remove_prefix(file.path, config.path)
+        <> ".gleam"
 
       let source_path = file.path <> ".gleam"
 
-      use _ <- result.try(case version_path {
-        Ok(version_path) -> create_dir_and_write(version_path, file.content)
-        _ -> Ok(Nil)
-      })
+      use _ <- result.try(create_dir_and_write(version_path, file.content))
 
       use _ <- result.try(
         simplifile.write(source_path, file.content)
@@ -416,11 +436,6 @@ fn gen_command(config: common.Configuration) {
       let fields =
         migration.extract_fields(tables)
         |> list.filter(fn(field) { field.raw_string != "__IGNORE__" })
-
-      use last_version <- result.try(
-        last_version
-        |> result.replace_error("No version found, cannot generate migrations"),
-      )
 
       use migration_fields <- result.try(case last_version {
         0 -> Ok(migration.find_different_fields(fields, [], tables))
@@ -508,12 +523,10 @@ fn gen_command(config: common.Configuration) {
 
   // Write the updated versions to the versions.json file if available
   let _ =
-    result.map(versions, fn(versions) {
-      simplifile.write(
-        config.path <> "/versions.json",
-        json.to_string(common.versions_config_to_json(versions)),
-      )
-    })
+    simplifile.write(
+      config.path <> "/versions.json",
+      json.to_string(common.versions_config_to_json(versions)),
+    )
 
   Nil
 }

@@ -16,6 +16,7 @@ pub fn linked_tables_create_test() {
         offstage: False,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -48,6 +49,7 @@ pub fn linked_tables_create_with_offstage_test() {
         offstage: True,
         service: False,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [
@@ -80,6 +82,7 @@ pub fn linked_tables_create_with_service_test() {
         offstage: True,
         service: True,
         versioning: False,
+        force: False,
         path: "./src",
       ),
       [

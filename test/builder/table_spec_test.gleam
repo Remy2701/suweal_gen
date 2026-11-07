@@ -6,7 +6,7 @@ import omcg/module
 pub fn table_spec_generation_test() {
   let generated =
     table_spec.generate(
-      common.Configuration(False, False, False, "./src/db/test"),
+      common.Configuration(False, False, False, False, "./src/db/test"),
       "user",
     )
 
@@ -16,7 +16,7 @@ pub fn table_spec_generation_test() {
 pub fn table_spec_generation_with_offstage_test() {
   let generated =
     table_spec.generate(
-      common.Configuration(True, False, False, "./src/db/test"),
+      common.Configuration(True, False, False, False, "./src/db/test"),
       "user",
     )
 
@@ -29,7 +29,7 @@ pub fn table_spec_generation_with_offstage_test() {
 pub fn table_spec_generation_with_service_test() {
   let generated =
     table_spec.generate(
-      common.Configuration(True, True, False, "./src/db/test"),
+      common.Configuration(True, True, False, False, "./src/db/test"),
       "user",
     )
 
