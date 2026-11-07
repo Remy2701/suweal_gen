@@ -1614,7 +1614,7 @@ fn do_delete_node(
             |> module.function_definition.add(
               module.function_call.create(module.binop.access(
                 module.identifier.create("serialize"),
-                module.identifier.create("nil"),
+                module.identifier.create("null"),
               )),
             ),
           )
@@ -1798,7 +1798,7 @@ fn do_delete_node(
             |> module.function_definition.add(
               module.function_call.create(module.binop.access(
                 module.identifier.create("serialize"),
-                module.identifier.create("nil"),
+                module.identifier.create("null"),
               )),
             ),
           )
@@ -1943,7 +1943,7 @@ fn do_delete_node(
             |> module.function_definition.add(
               module.function_call.create(module.binop.access(
                 module.identifier.create("serialize"),
-                module.identifier.create("nil"),
+                module.identifier.create("null"),
               )),
             ),
           )
@@ -2084,7 +2084,7 @@ fn do_delete_node(
             |> module.function_definition.add(
               module.function_call.create(module.binop.access(
                 module.identifier.create("serialize"),
-                module.identifier.create("nil"),
+                module.identifier.create("null"),
               )),
             ),
           )

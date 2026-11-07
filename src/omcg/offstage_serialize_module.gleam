@@ -81,7 +81,7 @@ pub fn value() -> Module {
 pub fn nil() -> Module {
   module.function_call.create(module.binop.access(
     module.identifier.create("serialize"),
-    module.identifier.create("nil"),
+    module.identifier.create("null"),
   ))
   |> module.add_import(["pont", "serialize"])
 }
