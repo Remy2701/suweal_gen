@@ -6,59 +6,26 @@ import common
 import extractor
 import generator
 import gleam/bit_array
-import gleam/bool
 import gleam/crypto
 import gleam/dict
 import gleam/dynamic/decode
+import gleam/float
 import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
 import gleam/result
 import gleam/string
+import gleam/time/duration
 import gleam/time/timestamp
 import lexer
 import migration
 import omcg/module
 import parser
+import shellout
 import simplifile
 
 const suweal_version = "0.4.3-local"
-
-/// List the files ending with ".surql" in the given directory and its 
-/// subdirectories recursively.
-fn list_files(
-  base: String,
-  list: List(String),
-) -> Result(List(String), String) {
-  use paths <- result.try(
-    simplifile.read_directory(base)
-    |> result.map_error(fn(_) { "Failed to read directory: " <> base }),
-  )
-  use data <- result.try(
-    list.try_fold(paths, list, fn(acc, path) {
-      use is_directory <- result.try(
-        simplifile.is_directory(base <> "/" <> path)
-        |> result.map_error(fn(_) {
-          "Failed to check if path is directory: " <> base <> "/" <> path
-        }),
-      )
-      use files <- result.try(case is_directory {
-        True -> list_files(base <> "/" <> path, acc)
-        False -> {
-          let #(name, extension) =
-            string.split_once(path, ".") |> result.unwrap(#(path, ""))
-          case extension {
-            "surql" -> Ok([base <> "/" <> name, ..acc])
-            _ -> Ok(acc)
-          }
-        }
-      })
-      Ok(files)
-    }),
-  )
-  Ok(data)
-}
 
 type Command {
   GenCommand(config: common.Configuration)
@@ -222,154 +189,132 @@ pub fn generate_files(config: common.Configuration, files: List(File)) {
   Ok(#(result, tables))
 }
 
-fn hash_file(path: String) -> Result(String, simplifile.FileError) {
-  use bits <- result.map(simplifile.read_bits(path))
-  crypto.hash(crypto.Md5, bits)
-  |> bit_array.base16_encode
+// ---------------------------------------------------------------------------
+// Console output
+// ---------------------------------------------------------------------------
+
+fn ansi(text: String, code: String) -> String {
+  "\u{1b}[" <> code <> "m" <> text <> "\u{1b}[0m"
 }
 
-fn compute_file_hashes(
-  files: List(String),
-) -> Result(List(#(String, String)), String) {
-  list.try_map(files, fn(file) {
-    use hash <- result.try(
-      hash_file(file <> ".surql")
-      |> result.map_error(fn(err) {
-        "Failed to compute hash for file: "
-        <> file
-        <> ": "
-        <> string.inspect(err)
+fn bold(text: String) -> String {
+  ansi(text, "1")
+}
+
+fn dim(text: String) -> String {
+  ansi(text, "2")
+}
+
+fn green(text: String) -> String {
+  ansi(text, "32")
+}
+
+fn yellow(text: String) -> String {
+  ansi(text, "33")
+}
+
+fn red(text: String) -> String {
+  ansi(text, "31")
+}
+
+fn cyan(text: String) -> String {
+  ansi(text, "36")
+}
+
+fn print_header(title: String) -> Nil {
+  io.println("")
+  io.println(bold(cyan("suweal_gen")) <> dim(" › ") <> bold(title))
+  io.println("")
+}
+
+fn print_success(message: String) -> Nil {
+  io.println("  " <> green("✓") <> " " <> message)
+}
+
+fn print_info(message: String) -> Nil {
+  io.println("  " <> cyan("•") <> " " <> message)
+}
+
+fn print_warning(message: String) -> Nil {
+  io.println("  " <> yellow("!") <> " " <> message)
+}
+
+fn print_detail(message: String) -> Nil {
+  io.println("      " <> dim(message))
+}
+
+fn print_error(message: String) -> Nil {
+  io.println_error("")
+  io.println_error("  " <> red("✗") <> " " <> bold(red("Error")))
+  message
+  |> string.split("\n")
+  |> list.each(fn(line) { io.println_error("    " <> line) })
+  io.println_error("")
+}
+
+/// "1 file", "2 files"
+fn pluralize(count: Int, noun: String) -> String {
+  let noun = case count {
+    1 -> noun
+    _ -> noun <> "s"
+  }
+  bold(int.to_string(count)) <> " " <> noun
+}
+
+fn elapsed_since(start: timestamp.Timestamp) -> String {
+  let seconds =
+    timestamp.difference(start, timestamp.system_time())
+    |> duration.to_seconds
+  float.to_string(float.to_precision(seconds, 2)) <> "s"
+}
+
+fn describe_file_error(path: String, error: simplifile.FileError) -> String {
+  path <> " (" <> simplifile.describe_error(error) <> ")"
+}
+
+// ---------------------------------------------------------------------------
+// File system helpers
+// ---------------------------------------------------------------------------
+
+/// List the ".surql" files in the given directory and its subdirectories
+/// recursively. The returned paths do not include the ".surql" extension.
+fn list_files(
+  base: String,
+  found: List(String),
+) -> Result(List(String), String) {
+  use paths <- result.try(
+    simplifile.read_directory(base)
+    |> result.map_error(fn(_) { "Failed to read directory: " <> base }),
+  )
+
+  list.try_fold(paths, found, fn(acc, path) {
+    let full_path = base <> "/" <> path
+    use is_directory <- result.try(
+      simplifile.is_directory(full_path)
+      |> result.map_error(fn(_) {
+        "Failed to check if path is a directory: " <> full_path
       }),
     )
-    Ok(#(file, hash))
+
+    case is_directory {
+      True -> list_files(full_path, acc)
+      False ->
+        case string.split_once(path, ".") {
+          Ok(#(name, "surql")) -> Ok([base <> "/" <> name, ..acc])
+          _ -> Ok(acc)
+        }
+    }
   })
 }
 
-fn compare_hashes(
-  old: List(#(String, String)),
-  new: List(#(String, String)),
-) -> List(String) {
-  list.filter(new, fn(new_entry) {
-    let #(file, hash) = new_entry
-    case list.find(old, fn(old_entry) { old_entry.0 == file }) {
-      Ok(#(_, old_hash)) -> old_hash != hash
-      Error(_) -> True
-    }
-  })
-  |> list.map(fn(entry) { entry.0 })
-}
-
-type ReadVersionResult {
-  NothingChanged(config: common.VersionsConfig, previous: Int)
-  ReadVersionResult(config: common.VersionsConfig, previous: Int)
-}
-
-fn read_versions(
-  config: common.Configuration,
-  hashes: List(#(String, String)),
-) -> Result(ReadVersionResult, Nil) {
-  let versions =
-    simplifile.read(config.path <> "/versions.json")
-    |> result.replace_error(Nil)
-    |> result.try(fn(content) {
-      json.parse(content, common.versions_config_decoder())
-      |> result.replace_error(Nil)
-    })
-
-  case versions, config.versioning {
-    Error(_), True -> {
-      io.println("Versioning was not enabled, enabling now...")
-      Ok(ReadVersionResult(
-        config: common.VersionsConfig(
-          [
-            common.VersionConfig(
-              version: "v1",
-              version_number: 1,
-              path: config.path <> "/versions_/v1",
-              suweal_version: suweal_version,
-              date: timestamp.system_time(),
-            ),
-          ],
-          config.path <> "/migrations_",
-          hashes,
-        ),
-        previous: 0,
-      ))
-    }
-    Ok(version), _ -> {
-      let different = compare_hashes(version.files, hashes)
-
-      let last_version =
-        list.max(version.versions, fn(a, b) {
-          int.compare(a.version_number, b.version_number)
-        })
-      let last_version = case last_version {
-        Ok(version) -> version
-        Error(_) -> panic as "Failed to determine the last version"
-      }
-
-      case different {
-        [] -> {
-          io.println("Nothing has changed!")
-          Ok(NothingChanged(
-            config: common.VersionsConfig(
-              versions: [
-                common.VersionConfig(
-                  version: "v" <> int.to_string(last_version.version_number + 1),
-                  version_number: last_version.version_number + 1,
-                  path: config.path
-                    <> "/versions_/v"
-                    <> int.to_string(last_version.version_number + 1),
-                  suweal_version: suweal_version,
-                  date: timestamp.system_time(),
-                ),
-                ..version.versions
-              ],
-              migrations: version.migrations,
-              files: hashes,
-            ),
-            previous: last_version.version_number,
-          ))
-        }
-        _ -> {
-          io.println(
-            "Found "
-            <> int.to_string(list.length(different))
-            <> " different files",
-          )
-          Ok(ReadVersionResult(
-            config: common.VersionsConfig(
-              versions: [
-                common.VersionConfig(
-                  version: "v" <> int.to_string(last_version.version_number + 1),
-                  version_number: last_version.version_number + 1,
-                  path: config.path
-                    <> "/versions_/v"
-                    <> int.to_string(last_version.version_number + 1),
-                  suweal_version: suweal_version,
-                  date: timestamp.system_time(),
-                ),
-                ..version.versions
-              ],
-              migrations: version.migrations,
-              files: hashes,
-            ),
-            previous: last_version.version_number,
-          ))
-        }
-      }
-    }
-    _, _ -> Error(Nil)
-  }
-}
-
+/// Write a file, creating its parent directories if needed.
 fn create_dir_and_write(path: String, content: String) -> Result(Nil, String) {
   let directory_path =
     path
     |> string.split("/")
-    |> list.reverse()
+    |> list.reverse
     |> list.drop(1)
-    |> list.reverse()
+    |> list.reverse
     |> string.join("/")
 
   use _ <- result.try(
@@ -379,198 +324,353 @@ fn create_dir_and_write(path: String, content: String) -> Result(Nil, String) {
     }),
   )
 
-  use _ <- result.try(
-    simplifile.write(path, content)
-    |> result.map_error(fn(err) {
-      "Failed to write file: " <> path <> " (" <> string.inspect(err) <> ")"
-    }),
-  )
-
-  Ok(Nil)
+  simplifile.write(path, content)
+  |> result.map_error(fn(err) {
+    "Failed to write file: " <> describe_file_error(path, err)
+  })
 }
 
-fn gen_command(config: common.Configuration) {
-  // List the files
-  let assert Ok(files) = list_files(config.path, [])
-  let assert Ok(hashes) = compute_file_hashes(files)
+// ---------------------------------------------------------------------------
+// Change detection & versioning
+// ---------------------------------------------------------------------------
 
-  let assert Ok(read_versions) = read_versions(config, hashes)
+fn hash_file(path: String) -> Result(String, simplifile.FileError) {
+  use bits <- result.map(simplifile.read_bits(path))
+  crypto.hash(crypto.Md5, bits)
+  |> bit_array.base16_encode
+}
 
-  let #(versions, last_version) = #(
-    read_versions.config,
-    read_versions.previous,
+fn compute_file_hashes(
+  files: List(String),
+) -> Result(List(#(String, String)), String) {
+  use file <- list.try_map(files)
+  let path = file <> ".surql"
+  case hash_file(path) {
+    Ok(hash) -> Ok(#(file, hash))
+    Error(err) ->
+      Error("Failed to hash file: " <> describe_file_error(path, err))
+  }
+}
+
+/// The files whose hash is new or differs from the previously recorded one.
+fn changed_files(
+  old: List(#(String, String)),
+  new: List(#(String, String)),
+) -> List(String) {
+  new
+  |> list.filter(fn(entry) {
+    let #(file, hash) = entry
+    case list.key_find(old, file) {
+      Ok(old_hash) -> old_hash != hash
+      Error(_) -> True
+    }
+  })
+  |> list.map(fn(entry) { entry.0 })
+}
+
+/// What happened to the source files since the last generation.
+type Changes {
+  FirstRun
+  Unchanged
+  Changed(files: List(String))
+}
+
+/// The versions to persist and the number of the version they follow.
+type VersionPlan {
+  VersionPlan(config: common.VersionsConfig, previous: Int, changes: Changes)
+}
+
+fn new_version(
+  config: common.Configuration,
+  number: Int,
+) -> common.VersionConfig {
+  let name = "v" <> int.to_string(number)
+  common.VersionConfig(
+    version: name,
+    version_number: number,
+    path: config.path <> "/versions_/" <> name,
+    suweal_version:,
+    date: timestamp.system_time(),
+  )
+}
+
+fn read_stored_versions(
+  config: common.Configuration,
+) -> Result(common.VersionsConfig, Nil) {
+  use content <- result.try(
+    simplifile.read(config.path <> "/versions.json")
+    |> result.replace_error(Nil),
+  )
+  json.parse(content, common.versions_config_decoder())
+  |> result.replace_error(Nil)
+}
+
+fn plan_versions(
+  config: common.Configuration,
+  hashes: List(#(String, String)),
+) -> Result(VersionPlan, String) {
+  case read_stored_versions(config) {
+    // Nothing (valid) stored yet: this is the very first version.
+    Error(_) ->
+      Ok(VersionPlan(
+        config: common.VersionsConfig(
+          [new_version(config, 1)],
+          config.path <> "/migrations_",
+          hashes,
+        ),
+        previous: 0,
+        changes: FirstRun,
+      ))
+
+    Ok(stored) -> {
+      use last <- result.try(
+        list.max(stored.versions, fn(a, b) {
+          int.compare(a.version_number, b.version_number)
+        })
+        |> result.replace_error("versions.json does not contain any version"),
+      )
+
+      let changes = case changed_files(stored.files, hashes) {
+        [] -> Unchanged
+        files -> Changed(files)
+      }
+
+      Ok(VersionPlan(
+        config: common.VersionsConfig(
+          versions: [
+            new_version(config, last.version_number + 1),
+            ..stored.versions
+          ],
+          migrations: stored.migrations,
+          files: hashes,
+        ),
+        previous: last.version_number,
+        changes:,
+      ))
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Generation steps
+// ---------------------------------------------------------------------------
+
+fn read_sources(files: List(String)) -> Result(List(File), String) {
+  use file <- list.try_map(files)
+  let path = file <> ".surql"
+  case simplifile.read(path) {
+    Ok(content) -> Ok(File(path: file, content:))
+    Error(err) ->
+      Error("Failed to read file: " <> describe_file_error(path, err))
+  }
+}
+
+/// Write every generated module to its source location and to the snapshot
+/// directory of the new version.
+fn write_generated_files(
+  config: common.Configuration,
+  files: List(File),
+  version: Int,
+) -> Result(Nil, String) {
+  use file <- list.try_each(files)
+  let source_path = file.path <> ".gleam"
+  let snapshot_path =
+    config.path
+    <> "/versions_/v"
+    <> int.to_string(version)
+    <> string.remove_prefix(file.path, config.path)
+    <> ".gleam"
+
+  use _ <- result.try(create_dir_and_write(snapshot_path, file.content))
+  create_dir_and_write(source_path, file.content)
+  |> result.map(fn(_) { print_detail(source_path) })
+}
+
+fn read_previous_fields(
+  config: common.Configuration,
+  version: Int,
+) -> Result(List(migration.MigrationTableField), String) {
+  let path =
+    config.path <> "/versions_/v" <> int.to_string(version) <> "/fields.json"
+
+  use content <- result.try(
+    simplifile.read(path)
+    |> result.replace_error(
+      "Failed to read fields of previous version ("
+      <> int.to_string(version)
+      <> ")",
+    ),
   )
 
-  let skip_generation = case read_versions {
-    NothingChanged(..) if !config.force -> True
-    _ -> False
+  json.parse(content, decode.list(migration.migration_table_field_decoder()))
+  |> result.replace_error("Failed to parse fields of previous version")
+}
+
+/// Write the field snapshot and the migration of the new version, returning
+/// the number of fields that differ from the previous version.
+fn write_migration(
+  config: common.Configuration,
+  tables: dict.Dict(String, extractor.TableInfo),
+  previous: Int,
+) -> Result(Int, String) {
+  let version = previous + 1
+  let fields =
+    migration.extract_fields(tables)
+    |> list.filter(fn(field) { field.raw_string != "__IGNORE__" })
+
+  use previous_fields <- result.try(case previous {
+    0 -> Ok([])
+    _ -> read_previous_fields(config, previous)
+  })
+  let migration_fields =
+    migration.find_different_fields(fields, previous_fields, tables)
+
+  use _ <- result.try(create_dir_and_write(
+    config.path <> "/versions_/v" <> int.to_string(version) <> "/fields.json",
+    json.to_string(json.array(fields, migration.migration_table_field_to_json)),
+  ))
+
+  let migration_path =
+    config.path
+    <> "/migrations_/migration_"
+    <> int.to_string(version)
+    <> ".gleam"
+  use _ <- result.try(create_dir_and_write(
+    migration_path,
+    migration.generate_migrations(version, migration_fields)
+      |> module.to_string,
+  ))
+
+  print_success(
+    pluralize(list.length(migration_fields), "field change")
+    <> " → "
+    <> dim(migration_path),
+  )
+  Ok(list.length(migration_fields))
+}
+
+fn print_changes(changes: Changes) -> Nil {
+  case changes {
+    FirstRun -> print_info("No previous version found, starting at v1")
+    Unchanged -> print_info("No changes since the previous version")
+    Changed(files) -> {
+      print_info(pluralize(list.length(files), "file") <> " changed:")
+      files |> list.sort(string.compare) |> list.each(print_detail)
+    }
   }
-  use <- bool.guard(skip_generation, Nil)
+}
 
-  // Read all *.surql files
-  let assert Ok(files) =
-    list.try_map(files, fn(file) {
-      use content <- result.try(simplifile.read(file <> ".surql"))
-      Ok(File(path: file, content: content))
-    })
+fn run_gen(config: common.Configuration) -> Result(Nil, String) {
+  let started = timestamp.system_time()
+  print_header("gen " <> dim(config.path))
 
-  // Generate the output files
-  let assert Ok(#(files, tables)) =
-    generate_files(config, files)
-    |> result.map_error(render_error)
-    |> result.map_error(io.println)
+  use files <- result.try(list_files(config.path, []))
+  print_success("Found " <> pluralize(list.length(files), ".surql file"))
 
-  // Generate the output files
-  let assert Ok(_) =
-    files
-    |> list.try_each(fn(file) {
-      let version_path =
-        config.path
-        <> "/versions_/v"
-        <> int.to_string(last_version + 1)
-        <> string.remove_prefix(file.path, config.path)
-        <> ".gleam"
+  use hashes <- result.try(compute_file_hashes(files))
+  use plan <- result.try(plan_versions(config, hashes))
+  print_changes(plan.changes)
 
-      let source_path = file.path <> ".gleam"
-
-      use _ <- result.try(create_dir_and_write(version_path, file.content))
-
-      use _ <- result.try(
-        simplifile.write(source_path, file.content)
-        |> result.map_error(fn(err) {
-          "Failed to write file: "
-          <> source_path
-          <> " ("
-          <> string.inspect(err)
-          <> ")"
-        }),
+  let version = plan.previous + 1
+  case plan.changes, config.force {
+    Unchanged, False -> {
+      print_warning(
+        "Nothing to generate, use " <> bold("--force") <> " to generate anyway",
       )
       Ok(Nil)
-    })
+    }
+    _, _ -> {
+      case plan.changes, config.force {
+        Unchanged, True -> print_warning("Forced generation")
+        _, _ -> Nil
+      }
 
-  // Generate the migrations if versioning is enabled
-  let assert Ok(_) = case config.versioning {
-    True -> {
-      let fields =
-        migration.extract_fields(tables)
-        |> list.filter(fn(field) { field.raw_string != "__IGNORE__" })
+      use sources <- result.try(read_sources(files))
+      use #(generated, tables) <- result.try(
+        generate_files(config, sources)
+        |> result.map_error(render_error),
+      )
+      print_success("Generated " <> pluralize(list.length(generated), "module"))
 
-      use migration_fields <- result.try(case last_version {
-        0 -> Ok(migration.find_different_fields(fields, [], tables))
-        _ -> {
-          let previous_version_path =
-            config.path
-            <> "/versions_/v"
-            <> int.to_string(last_version)
-            <> "/fields.json"
-
-          use previous_fields <- result.try(
-            simplifile.read(previous_version_path)
-            |> result.replace_error(
-              "Failed to read fields of previous version ("
-              <> int.to_string(last_version)
-              <> ")",
-            ),
-          )
-
-          use previous_fields <- result.try(
-            json.parse(
-              previous_fields,
-              decode.list(migration.migration_table_field_decoder()),
-            )
-            |> result.replace_error(
-              "Failed to parse fields of previous version",
-            ),
-          )
-
-          let fields =
-            migration.find_different_fields(fields, previous_fields, tables)
-
-          Ok(fields)
-        }
-      })
-
-      io.println(
-        "Found "
-        <> int.to_string(list.length(migration_fields))
-        <> " different fields.",
+      use _ <- result.try(write_generated_files(config, generated, version))
+      print_success(
+        "Wrote snapshot "
+        <> dim(config.path <> "/versions_/v" <> int.to_string(version)),
       )
 
-      let version_path =
-        config.path
-        <> "/versions_/v"
-        <> int.to_string(last_version + 1)
-        <> "/fields.json"
+      use _ <- result.try(case config.versioning {
+        True ->
+          result.map(write_migration(config, tables, plan.previous), fn(_) {
+            Nil
+          })
+        False -> Ok(Nil)
+      })
 
       use _ <- result.try(
         simplifile.write(
-          version_path,
-          json.to_string(json.array(
-            fields,
-            migration.migration_table_field_to_json,
-          )),
+          config.path <> "/versions.json",
+          json.to_string(common.versions_config_to_json(plan.config)),
         )
         |> result.map_error(fn(err) {
           "Failed to write file: "
-          <> version_path
-          <> " ("
-          <> string.inspect(err)
-          <> ")"
+          <> describe_file_error(config.path <> "/versions.json", err)
         }),
       )
 
-      let migration =
-        migration.generate_migrations(last_version + 1, migration_fields)
-
-      // Write migration to migration_<version>.gleam
-      let migration_path =
-        config.path
-        <> "/migrations_/migration_"
-        <> int.to_string(last_version + 1)
-        <> ".gleam"
-
-      use _ <- result.try(create_dir_and_write(
-        migration_path,
-        module.to_string(migration),
-      ))
-
+      io.println("")
+      io.println(
+        "  "
+        <> green(bold("Done!"))
+        <> " Generated version "
+        <> bold("v" <> int.to_string(version))
+        <> dim(" in " <> elapsed_since(started)),
+      )
+      io.println("")
       Ok(Nil)
     }
-    False -> Ok(Nil)
   }
-
-  // Write the updated versions to the versions.json file if available
-  let _ =
-    simplifile.write(
-      config.path <> "/versions.json",
-      json.to_string(common.versions_config_to_json(versions)),
-    )
-
-  io.println("Generated version: " <> int.to_string(last_version + 1))
-
-  Nil
 }
 
-fn clear_command(path: String) {
-  let assert Ok(files) = list_files(path, [])
+fn run_clear(path: String) -> Result(Nil, String) {
+  print_header("clear " <> dim(path))
 
-  let _ = simplifile.delete(path <> "/versions_")
-  let _ = simplifile.delete(path <> "/versions.json")
-  let _ = simplifile.delete(path <> "/migrations_")
+  use files <- result.try(list_files(path, []))
+  let targets =
+    list.flatten([
+      [path <> "/versions_", path <> "/versions.json", path <> "/migrations_"],
+      list.map(files, fn(file) { file <> ".gleam" }),
+    ])
 
-  let _ = list.map(files, fn(file) { simplifile.delete(file <> ".gleam") })
+  // Missing targets are fine: the goal is that they do not exist afterwards.
+  let removed =
+    list.filter(targets, fn(target) {
+      case simplifile.is_file(target), simplifile.is_directory(target) {
+        Ok(False), Ok(False) -> False
+        _, _ -> simplifile.delete(target) == Ok(Nil)
+      }
+    })
 
-  Nil
+  list.each(removed, print_detail)
+  print_success("Removed " <> pluralize(list.length(removed), "item"))
+  io.println("")
+  Ok(Nil)
 }
 
 pub fn main() -> Nil {
-  // Parse the arguments
   let assert Ok(command) =
     command()
     |> clip.run(argv.load().arguments)
 
-  case command {
-    GenCommand(config:) -> gen_command(config)
-    ClearCommand(path:) -> clear_command(path)
+  let result = case command {
+    GenCommand(config:) -> run_gen(config)
+    ClearCommand(path:) -> run_clear(path)
+  }
+
+  case result {
+    Ok(Nil) -> Nil
+    Error(message) -> {
+      print_error(message)
+      shellout.exit(1)
+    }
   }
 }
