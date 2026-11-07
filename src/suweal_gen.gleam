@@ -311,7 +311,25 @@ fn read_versions(
       case different {
         [] -> {
           io.println("Nothing has changed!")
-          Ok(NothingChanged(version, last_version.version_number))
+          Ok(NothingChanged(
+            config: common.VersionsConfig(
+              versions: [
+                common.VersionConfig(
+                  version: "v" <> int.to_string(last_version.version_number + 1),
+                  version_number: last_version.version_number + 1,
+                  path: config.path
+                    <> "/versions_/v"
+                    <> int.to_string(last_version.version_number + 1),
+                  suweal_version: suweal_version,
+                  date: timestamp.system_time(),
+                ),
+                ..version.versions
+              ],
+              migrations: version.migrations,
+              files: hashes,
+            ),
+            previous: last_version.version_number,
+          ))
         }
         _ -> {
           io.println(
@@ -527,6 +545,8 @@ fn gen_command(config: common.Configuration) {
       config.path <> "/versions.json",
       json.to_string(common.versions_config_to_json(versions)),
     )
+
+  io.println("Generated version: " <> int.to_string(last_version + 1))
 
   Nil
 }
