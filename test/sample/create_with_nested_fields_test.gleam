@@ -10,9 +10,14 @@ pub const input = "CREATE post SET meta = $meta;"
 pub const path = "./src/db/test/create_with_nested_fields"
 
 pub fn create_with_nested_fields_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,
@@ -33,9 +38,14 @@ pub fn create_with_nested_fields_test() {
 }
 
 pub fn create_with_nested_fields_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,
@@ -56,9 +66,14 @@ pub fn create_with_nested_fields_with_offstage_test() {
 }
 
 pub fn create_with_nested_fields_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,
@@ -83,9 +98,14 @@ pub const direct_input = "CREATE post SET meta.title = $title, meta.content = $c
 pub const direct_path = "./src/db/test/create_directly_with_nested_fields"
 
 pub fn create_directly_with_nested_fields_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,
@@ -106,9 +126,14 @@ pub fn create_directly_with_nested_fields_test() {
 }
 
 pub fn create_directly_with_nested_fields_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,
@@ -129,9 +154,14 @@ pub fn create_directly_with_nested_fields_with_offstage_test() {
 }
 
 pub fn create_directly_with_nested_fields_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: table_with_nested_fields.path,

@@ -13,7 +13,12 @@ pub const path = "./src/db/test/simple_user_table"
 pub fn simple_user_table_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )
@@ -24,7 +29,12 @@ pub fn simple_user_table_test() {
 pub fn simple_user_table_with_backstage_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )
@@ -35,7 +45,12 @@ pub fn simple_user_table_with_backstage_test() {
 pub fn simple_user_table_with_backstage_and_service_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )

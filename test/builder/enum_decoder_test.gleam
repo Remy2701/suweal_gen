@@ -6,7 +6,7 @@ import omcg/module
 pub fn enum_decoder_generation_test() {
   let generated =
     enum_decoder.generate(
-      common.Configuration(False, False, "./src/db/test"),
+      common.Configuration(False, False, False, "./src/db/test"),
       "color",
       ["red", "green", "blue"],
     )
@@ -17,7 +17,7 @@ pub fn enum_decoder_generation_test() {
 pub fn enum_decoder_generation_with_offstage_test() {
   let generated =
     enum_decoder.generate(
-      common.Configuration(True, False, "./src/db/test"),
+      common.Configuration(True, False, False, "./src/db/test"),
       "color",
       ["red", "green", "blue"],
     )
@@ -31,7 +31,7 @@ pub fn enum_decoder_generation_with_offstage_test() {
 pub fn enum_decoder_generation_with_service_test() {
   let generated =
     enum_decoder.generate(
-      common.Configuration(True, True, "./src/db/test"),
+      common.Configuration(True, True, False, "./src/db/test"),
       "color",
       ["red", "green", "blue"],
     )

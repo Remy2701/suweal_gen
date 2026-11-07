@@ -18,9 +18,14 @@ pub const input_table_b = "DEFINE TABLE b TYPE NORMAL SCHEMAFULL PERMISSIONS NON
 pub const path_table_b = "./src/db/test/linked_table_b"
 
 pub fn linked_tables_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),
@@ -34,9 +39,14 @@ pub fn linked_tables_test() {
 }
 
 pub fn linked_tables_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),
@@ -50,9 +60,14 @@ pub fn linked_tables_with_offstage_test() {
 }
 
 pub fn linked_tables_with_offstage_and_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),

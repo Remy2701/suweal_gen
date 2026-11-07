@@ -22,6 +22,7 @@ pub type TableField {
     type_: surreal_type.SurrealType,
     linked_enum: option.Option(String),
     object_fields: List(TableField),
+    raw_string: String,
   )
 }
 
@@ -38,6 +39,7 @@ fn merge_fields(a: List(TableField), b: List(TableField)) {
         TableField(
           ..found,
           object_fields: merge_fields(found.object_fields, field.object_fields),
+          raw_string: field.raw_string,
         ),
       ])
     _ -> [field, ..acc]
@@ -51,6 +53,7 @@ pub type TableInfo {
     fields: List(TableField),
     enums: List(#(String, List(String))),
     delegated: option.Option(node.Node),
+    raw_string: String,
   )
 }
 
@@ -63,6 +66,7 @@ fn resolve_nested_field(
   type_: surreal_type.SurrealType,
   enum: option.Option(String),
   object_fields: List(TableField),
+  raw: node.Node,
 ) -> Result(List(TableField), Nil) {
   case node {
     node.Identifier(name) ->
@@ -78,22 +82,30 @@ fn resolve_nested_field(
           type_: type_,
           linked_enum: enum,
           object_fields: object_fields,
+          raw_string: node.to_string(raw),
         ),
       ])
       |> Ok
     node.BinaryOperator(_, node.Access, node.All) -> Ok(fields)
     node.BinaryOperator(lhs, node.Access, rhs) -> {
-      use resolved <- result.try(
-        resolve_nested_field(path, lhs, [], surreal_type.Object, option.None, [
+      use resolved <- result.try(resolve_nested_field(
+        path,
+        lhs,
+        [],
+        surreal_type.Object,
+        option.None,
+        [
           TableField(
             dependencies: [],
             name: node.to_string(rhs),
             type_: type_,
             linked_enum: enum,
             object_fields: object_fields,
+            raw_string: node.to_string(raw),
           ),
-        ]),
-      )
+        ],
+        raw,
+      ))
 
       merge_fields(resolved, fields)
       |> Ok
@@ -124,6 +136,7 @@ fn extract_normal_table(
   state: NodeProcessorState,
   name: String,
   as_: option.Option(node.Node),
+  raw: node.Node,
 ) -> Result(NodeProcessorState, String) {
   Ok(
     NodeProcessorState(tables: dict.insert(
@@ -142,12 +155,14 @@ fn extract_normal_table(
               type_: surreal_type.Identifier(id_case.string_to_pascal_case(name)),
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORE__",
             ),
           ]
           _ -> []
         },
         enums: [],
         delegated: as_,
+        raw_string: node.to_string(raw),
       ),
     )),
   )
@@ -158,6 +173,7 @@ fn extract_relation_table(
   path: String,
   state: NodeProcessorState,
   name: String,
+  node: node.Node,
 ) -> Result(NodeProcessorState, String) {
   Ok(
     NodeProcessorState(tables: dict.insert(
@@ -175,10 +191,12 @@ fn extract_relation_table(
             type_: surreal_type.Identifier(id_case.string_to_pascal_case(name)),
             linked_enum: option.None,
             object_fields: [],
+            raw_string: "__IGNORE__",
           ),
         ],
         enums: [],
         delegated: option.None,
+        raw_string: node.to_string(node),
       ),
     )),
   )
@@ -237,6 +255,7 @@ fn extract_field(
   table: String,
   type_: surreal_type.SurrealType,
   assert_: option.Option(node.Node),
+  node: node.Node,
 ) -> Result(NodeProcessorState, String) {
   use info <- result.try(
     dict.get(state.tables, table)
@@ -246,7 +265,7 @@ fn extract_field(
   let #(enum, enums) = process_field_assert(name, info, assert_)
 
   use new_fields <- result.try(
-    resolve_nested_field(path, name, info.fields, type_, enum, [])
+    resolve_nested_field(path, name, info.fields, type_, enum, [], node)
     |> result.map_error(fn(_) {
       "Failed to resolve nested field: " <> node.to_string(name)
     }),
@@ -270,11 +289,11 @@ fn do_extract_tables(
 ) -> Result(NodeProcessorState, String) {
   case node {
     node.DefineTable(name:, type_: node.NormalTable, as_:, ..) ->
-      extract_normal_table(path, state, name, as_)
+      extract_normal_table(path, state, name, as_, node)
     node.DefineTable(name:, type_: node.RelationTable(..), ..) ->
-      extract_relation_table(path, state, name)
+      extract_relation_table(path, state, name, node)
     node.DefineField(name:, table:, type_:, assert_:, ..) ->
-      extract_field(path, state, name, table, type_, assert_)
+      extract_field(path, state, name, table, type_, assert_, node)
     _ -> Ok(state)
   }
 }

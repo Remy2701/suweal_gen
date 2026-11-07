@@ -10,9 +10,14 @@ pub const input_from_a = "DELETE $a->c;"
 pub const path_from_a = "./src/db/test/linked_tables_via_relation_delete_from_a"
 
 pub fn linked_tables_via_relation_delete_from_a_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -41,9 +46,14 @@ pub fn linked_tables_via_relation_delete_from_a_test() {
 }
 
 pub fn linked_tables_via_relation_delete_from_a_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -72,9 +82,14 @@ pub fn linked_tables_via_relation_delete_from_a_with_offstage_test() {
 }
 
 pub fn linked_tables_via_relation_delete_from_a_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -107,9 +122,14 @@ pub const input_from_b = "DELETE $b<-c;"
 pub const path_from_b = "./src/db/test/linked_tables_via_relation_delete_from_b"
 
 pub fn linked_tables_via_relation_delete_from_b_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -138,9 +158,14 @@ pub fn linked_tables_via_relation_delete_from_b_test() {
 }
 
 pub fn linked_tables_via_relation_delete_from_b_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -169,9 +194,14 @@ pub fn linked_tables_via_relation_delete_from_b_with_offstage_test() {
 }
 
 pub fn linked_tables_via_relation_delete_from_b_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -204,9 +234,14 @@ pub const input_a_to_b = "DELETE $a->c->$b;"
 pub const path_a_to_b = "./src/db/test/linked_tables_via_relation_delete_a_to_b"
 
 pub fn linked_tables_via_relation_delete_a_to_b_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -235,9 +270,14 @@ pub fn linked_tables_via_relation_delete_a_to_b_test() {
 }
 
 pub fn linked_tables_via_relation_delete_a_to_b_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,
@@ -266,9 +306,14 @@ pub fn linked_tables_via_relation_delete_a_to_b_with_offstage_test() {
 }
 
 pub fn linked_tables_via_relation_delete_a_to_b_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: linked_tables_via_relation.path_table_a,

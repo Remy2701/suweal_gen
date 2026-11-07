@@ -14,6 +14,7 @@ pub fn type_definition_generation_with_single_id_field_test() {
         type_: surreal_type.Identifier("User"),
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -32,6 +33,7 @@ pub fn type_definition_generation_with_single_optional_id_field_test() {
         type_: surreal_type.Option(surreal_type.Identifier("User")),
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -50,6 +52,7 @@ pub fn type_definition_generation_with_single_record_field_test() {
         type_: surreal_type.Record("User"),
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -68,6 +71,7 @@ pub fn type_definition_generation_with_primitive_fields_test() {
         type_: surreal_type.String,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
       extractor.TableField(
         dependencies: [],
@@ -75,6 +79,7 @@ pub fn type_definition_generation_with_primitive_fields_test() {
         type_: surreal_type.Int,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
       extractor.TableField(
         dependencies: [],
@@ -82,6 +87,7 @@ pub fn type_definition_generation_with_primitive_fields_test() {
         type_: surreal_type.Float,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
       extractor.TableField(
         dependencies: [],
@@ -89,6 +95,7 @@ pub fn type_definition_generation_with_primitive_fields_test() {
         type_: surreal_type.Bool,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
       extractor.TableField(
         dependencies: [],
@@ -96,6 +103,7 @@ pub fn type_definition_generation_with_primitive_fields_test() {
         type_: surreal_type.Array(surreal_type.String),
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -114,6 +122,7 @@ pub fn type_definition_generation_with_single_datetime_field_test() {
         type_: surreal_type.Datetime,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -132,6 +141,7 @@ pub fn type_definition_generation_with_single_point_field_test() {
         type_: surreal_type.Point,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -150,6 +160,7 @@ pub fn type_definition_generation_with_single_object_test() {
         type_: surreal_type.Object,
         linked_enum: option.None,
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -174,8 +185,10 @@ pub fn type_definition_generation_with_nested_object_test() {
             type_: surreal_type.Object,
             linked_enum: option.None,
             object_fields: [],
+            raw_string: "__IGNORED__",
           ),
         ],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -200,8 +213,10 @@ pub fn type_definition_generation_with_array_of_nested_object_field_test() {
             type_: surreal_type.Object,
             linked_enum: option.None,
             object_fields: [],
+            raw_string: "__IGNORED__",
           ),
         ],
+        raw_string: "__IGNORED__",
       ),
     ])
 
@@ -220,6 +235,7 @@ pub fn type_definition_generation_with_string_enum_field_test() {
         type_: surreal_type.String,
         linked_enum: option.Some("Status"),
         object_fields: [],
+        raw_string: "__IGNORED__",
       ),
     ])
 

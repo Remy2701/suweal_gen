@@ -9,7 +9,7 @@ import suweal/surreal_type
 pub fn type_to_json_generation_test() {
   let generated =
     type_to_json.generate(
-      common.Configuration(False, False, "./src/db/test"),
+      common.Configuration(False, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(
@@ -18,6 +18,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -25,6 +26,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -32,6 +34,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -39,6 +42,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Bool,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -46,6 +50,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Array(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -53,6 +58,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Datetime,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -60,6 +66,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Option(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -67,6 +74,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Identifier("user"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -74,6 +82,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Record("id"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -81,6 +90,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Object,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -94,6 +104,7 @@ pub fn type_to_json_generation_test() {
               type_: surreal_type.String,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -101,6 +112,7 @@ pub fn type_to_json_generation_test() {
               type_: surreal_type.Int,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -108,8 +120,10 @@ pub fn type_to_json_generation_test() {
               type_: surreal_type.Float,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
           ],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -117,6 +131,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.Point,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -124,6 +139,7 @@ pub fn type_to_json_generation_test() {
           type_: surreal_type.String,
           linked_enum: option.Some("enum"),
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "",
@@ -135,7 +151,7 @@ pub fn type_to_json_generation_test() {
 pub fn type_to_json_generation_with_prefix_test() {
   let generated =
     type_to_json.generate(
-      common.Configuration(False, False, "./src/db/test"),
+      common.Configuration(False, False, False, "./src/db/test"),
       "nested",
       [
         extractor.TableField(
@@ -144,6 +160,7 @@ pub fn type_to_json_generation_with_prefix_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -151,6 +168,7 @@ pub fn type_to_json_generation_with_prefix_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -158,6 +176,7 @@ pub fn type_to_json_generation_with_prefix_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "nested_",
@@ -172,7 +191,7 @@ pub fn type_to_json_generation_with_prefix_test() {
 pub fn type_to_json_generation_with_offstage_test() {
   let generated =
     type_to_json.generate(
-      common.Configuration(True, False, "./src/db/test"),
+      common.Configuration(True, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(
@@ -181,6 +200,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -188,6 +208,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -195,6 +216,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -202,6 +224,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Bool,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -209,6 +232,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Array(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -216,6 +240,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Datetime,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -223,6 +248,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Option(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -230,6 +256,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Identifier("user"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -237,6 +264,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Record("id"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -244,6 +272,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Object,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -257,6 +286,7 @@ pub fn type_to_json_generation_with_offstage_test() {
               type_: surreal_type.String,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -264,6 +294,7 @@ pub fn type_to_json_generation_with_offstage_test() {
               type_: surreal_type.Int,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -271,8 +302,10 @@ pub fn type_to_json_generation_with_offstage_test() {
               type_: surreal_type.Float,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
           ],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -280,6 +313,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.Point,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -287,6 +321,7 @@ pub fn type_to_json_generation_with_offstage_test() {
           type_: surreal_type.String,
           linked_enum: option.Some("enum"),
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "",
@@ -301,7 +336,7 @@ pub fn type_to_json_generation_with_offstage_test() {
 pub fn type_to_json_generation_with_service_test() {
   let generated =
     type_to_json.generate(
-      common.Configuration(True, False, "./src/db/test"),
+      common.Configuration(True, False, False, "./src/db/test"),
       "user",
       [
         extractor.TableField(
@@ -310,6 +345,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -317,6 +353,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -324,6 +361,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -331,6 +369,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Bool,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -338,6 +377,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Array(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -345,6 +385,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Datetime,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -352,6 +393,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Option(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -359,6 +401,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Identifier("user"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -366,6 +409,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Record("id"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -373,6 +417,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Object,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -386,6 +431,7 @@ pub fn type_to_json_generation_with_service_test() {
               type_: surreal_type.String,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -393,6 +439,7 @@ pub fn type_to_json_generation_with_service_test() {
               type_: surreal_type.Int,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -400,8 +447,10 @@ pub fn type_to_json_generation_with_service_test() {
               type_: surreal_type.Float,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
           ],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -409,6 +458,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.Point,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -416,6 +466,7 @@ pub fn type_to_json_generation_with_service_test() {
           type_: surreal_type.String,
           linked_enum: option.Some("enum"),
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "",

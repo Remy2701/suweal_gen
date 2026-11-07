@@ -25,9 +25,14 @@ pub const input_table_c = "DEFINE TABLE c TYPE RELATION IN a OUT b SCHEMAFULL PE
 pub const path_table_c = "./src/db/test/linked_table_c"
 
 pub fn linked_tables_via_relation_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),
@@ -42,9 +47,14 @@ pub fn linked_tables_via_relation_test() {
 }
 
 pub fn linked_tables_via_relation_with_offstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),
@@ -59,9 +69,14 @@ pub fn linked_tables_via_relation_with_offstage_test() {
 }
 
 pub fn linked_tables_via_relation_with_offstage_and_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(path: path_table_a, content: input_table_a),
         suweal_gen.File(path: path_table_b, content: input_table_b),

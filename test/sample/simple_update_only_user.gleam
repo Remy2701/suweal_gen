@@ -10,9 +10,14 @@ pub const input = "UPDATE ONLY user SET username = $username, email = $email WHE
 pub const path = "./src/db/test/simple_update_only_user"
 
 pub fn simple_update_only_user_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: simple_user_table_test.path,
@@ -33,9 +38,14 @@ pub fn simple_update_only_user_test() {
 }
 
 pub fn simple_update_only_user_with_backstage_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: simple_user_table_test.path,
@@ -56,9 +66,14 @@ pub fn simple_update_only_user_with_backstage_test() {
 }
 
 pub fn simple_update_only_user_with_service_test() {
-  let assert Ok(content) =
+  let assert Ok(#(content, _)) =
     suweal_gen.generate_files(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       [
         suweal_gen.File(
           path: simple_user_table_test.path,

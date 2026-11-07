@@ -12,7 +12,12 @@ pub const path = "./src/db/test/table_with_enum"
 pub fn table_with_enum_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: False, service: False, path: "./src"),
+      common.Configuration(
+        offstage: False,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )
@@ -23,7 +28,12 @@ pub fn table_with_enum_test() {
 pub fn table_with_enum_with_offstage_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: True, service: False, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: False,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )
@@ -34,7 +44,12 @@ pub fn table_with_enum_with_offstage_test() {
 pub fn table_with_enum_with_service_test() {
   let assert Ok(content) =
     suweal_gen.generate_file(
-      common.Configuration(offstage: True, service: True, path: "./src"),
+      common.Configuration(
+        offstage: True,
+        service: True,
+        versioning: False,
+        path: "./src",
+      ),
       input,
       path,
     )

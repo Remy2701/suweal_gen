@@ -327,6 +327,7 @@ fn link_type(
         }
       }),
       object_fields: field.object_fields,
+      raw_string: "__IGNORE__",
     ),
     dependencies: case field.type_ {
       surreal_type.Identifier(inner) ->
@@ -455,6 +456,7 @@ fn resolve_table_fields(
           type_: surreal_type.Record(id_case.to_pascal_case(current.name).value),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORE__",
         ),
         dependencies: set.new(),
       ))
@@ -483,6 +485,7 @@ fn resolve_table_fields(
           type_: surreal_type.Object,
           linked_enum: option.None,
           object_fields: list.map(resolved_fields, fn(result) { result.field }),
+          raw_string: "__IGNORE__",
         ),
         dependencies: list.map(resolved_fields, fn(result) {
           result.dependencies
@@ -518,6 +521,7 @@ fn resolve_table_fields(
                       )),
                       linked_enum: option.None,
                       object_fields: [],
+                      raw_string: "__IGNORE__",
                     ),
                     dependencies: resolved_lhs.dependencies,
                   ))
@@ -602,6 +606,7 @@ fn resolve_table_fields(
                   type_: inner,
                   linked_enum: resolved_lhs.field.linked_enum,
                   object_fields: resolved_lhs.field.object_fields,
+                  raw_string: "__IGNORE__",
                 ),
                 dependencies: resolved_lhs.dependencies,
               ))
@@ -663,6 +668,7 @@ fn resolve_table_fields(
               type_: surreal_type.Array(value),
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORE__",
             ),
             dependencies: list.map(resolved, fn(it) { it.dependencies })
               |> list.fold(set.new(), set.union),
@@ -692,6 +698,7 @@ fn resolve_table_fields(
               type_: surreal_type.Int,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORE__",
             ),
             dependencies: set.new(),
           ))
@@ -1663,15 +1670,14 @@ fn do_delete_node(
             _ -> f
           }
         })
-        |> result.unwrap(
-          extractor.TableField(
-            dependencies: [],
-            name: "in",
-            type_: surreal_type.Record("Nil"),
-            linked_enum: option.None,
-            object_fields: [],
-          ),
-        )
+        |> result.unwrap(extractor.TableField(
+          dependencies: [],
+          name: "in",
+          type_: surreal_type.Record("Nil"),
+          linked_enum: option.None,
+          object_fields: [],
+          raw_string: "__IGNORE__",
+        ))
 
       let out =
         table_info.fields
@@ -1703,15 +1709,14 @@ fn do_delete_node(
             _ -> f
           }
         })
-        |> result.unwrap(
-          extractor.TableField(
-            dependencies: [],
-            name: "out",
-            type_: surreal_type.Record("Nil"),
-            linked_enum: option.None,
-            object_fields: [],
-          ),
-        )
+        |> result.unwrap(extractor.TableField(
+          dependencies: [],
+          name: "out",
+          type_: surreal_type.Record("Nil"),
+          linked_enum: option.None,
+          object_fields: [],
+          raw_string: "__IGNORE__",
+        ))
 
       let parameters =
         list.filter_map(
@@ -1849,15 +1854,14 @@ fn do_delete_node(
             _ -> f
           }
         })
-        |> result.unwrap(
-          extractor.TableField(
-            dependencies: [],
-            name: "in",
-            type_: surreal_type.Record("Nil"),
-            linked_enum: option.None,
-            object_fields: [],
-          ),
-        )
+        |> result.unwrap(extractor.TableField(
+          dependencies: [],
+          name: "in",
+          type_: surreal_type.Record("Nil"),
+          linked_enum: option.None,
+          object_fields: [],
+          raw_string: "__IGNORE__",
+        ))
 
       let parameters =
         list.filter_map(
@@ -1995,15 +1999,14 @@ fn do_delete_node(
             _ -> f
           }
         })
-        |> result.unwrap(
-          extractor.TableField(
-            dependencies: [],
-            name: "out",
-            type_: surreal_type.Record("Nil"),
-            linked_enum: option.None,
-            object_fields: [],
-          ),
-        )
+        |> result.unwrap(extractor.TableField(
+          dependencies: [],
+          name: "out",
+          type_: surreal_type.Record("Nil"),
+          linked_enum: option.None,
+          object_fields: [],
+          raw_string: "__IGNORE__",
+        ))
 
       let parameters =
         list.filter_map(
@@ -2252,15 +2255,14 @@ fn do_relate_node(
         _ -> f
       }
     })
-    |> result.unwrap(
-      extractor.TableField(
-        dependencies: [],
-        name: "in",
-        type_: surreal_type.Record("Nil"),
-        linked_enum: option.None,
-        object_fields: [],
-      ),
-    )
+    |> result.unwrap(extractor.TableField(
+      dependencies: [],
+      name: "in",
+      type_: surreal_type.Record("Nil"),
+      linked_enum: option.None,
+      object_fields: [],
+      raw_string: "__IGNORE__",
+    ))
   let out =
     table_info.fields
     |> list.find(fn(f) { f.name == "out" })
@@ -2287,15 +2289,14 @@ fn do_relate_node(
         _ -> f
       }
     })
-    |> result.unwrap(
-      extractor.TableField(
-        dependencies: [],
-        name: "out",
-        type_: surreal_type.Record("Nil"),
-        linked_enum: option.None,
-        object_fields: [],
-      ),
-    )
+    |> result.unwrap(extractor.TableField(
+      dependencies: [],
+      name: "out",
+      type_: surreal_type.Record("Nil"),
+      linked_enum: option.None,
+      object_fields: [],
+      raw_string: "__IGNORE__",
+    ))
 
   let parameters =
     list.filter_map(
@@ -2411,6 +2412,7 @@ pub fn process_delegated_table(
                       },
                       linked_enum: f.linked_enum,
                       object_fields: f.object_fields,
+                      raw_string: "__IGNORE__",
                     )
                   })
                 node.Identifier(name) ->
@@ -2425,6 +2427,7 @@ pub fn process_delegated_table(
                       linked_enum: f.linked_enum
                         |> option.map(fn(enum) { prefix <> "." <> enum }),
                       object_fields: f.object_fields,
+                      raw_string: "__IGNORE__",
                     )
                   })
                 node.WrappedNode(node.If(_, then_:, else_:, ..)) ->
@@ -2446,6 +2449,7 @@ pub fn process_delegated_table(
                           linked_enum: f.linked_enum
                             |> option.map(fn(enum) { prefix <> "." <> enum }),
                           object_fields: f.object_fields,
+                          raw_string: "__IGNORE__",
                         )
                       })
                     }
@@ -2461,6 +2465,7 @@ pub fn process_delegated_table(
             fields: list.append(info.fields, table_fields),
             enums: info.enums,
             delegated: option.None,
+            raw_string: "__IGNORE__",
           ))
         }
         |> result.unwrap(info)

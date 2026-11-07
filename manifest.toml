@@ -54,7 +54,10 @@ packages = [
 argv = { version = ">= 1.1.0 and < 2.0.0" }
 birdie = { version = ">= 2.0.2 and < 3.0.0" }
 clip = { version = ">= 1.2.2 and < 2.0.0" }
+gleam_crypto = { version = ">= 1.6.0 and < 2.0.0" }
+gleam_json = { version = ">= 3.1.0 and < 4.0.0" }
 gleam_stdlib = { version = ">= 1.0.0 and < 2.0.0" }
+gleam_time = { version = ">= 1.11.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 omcg = { version = ">= 0.3.1 and < 1.0.0" }
 shellout = { version = ">= 1.8.0 and < 2.0.0" }

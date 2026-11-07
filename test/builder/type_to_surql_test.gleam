@@ -16,6 +16,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -23,6 +24,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -30,6 +32,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -37,6 +40,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Bool,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -44,6 +48,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Array(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -51,6 +56,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Datetime,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -58,6 +64,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Option(surreal_type.String),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -65,6 +72,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Identifier("user"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -72,6 +80,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Record("id"),
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -79,6 +88,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Object,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -92,6 +102,7 @@ pub fn type_to_surql_generation_test() {
               type_: surreal_type.String,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -99,6 +110,7 @@ pub fn type_to_surql_generation_test() {
               type_: surreal_type.Int,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
             extractor.TableField(
               dependencies: [],
@@ -106,8 +118,10 @@ pub fn type_to_surql_generation_test() {
               type_: surreal_type.Float,
               linked_enum: option.None,
               object_fields: [],
+              raw_string: "__IGNORED__",
             ),
           ],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -115,6 +129,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.Point,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -122,6 +137,7 @@ pub fn type_to_surql_generation_test() {
           type_: surreal_type.String,
           linked_enum: option.Some("enum"),
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "",
@@ -141,6 +157,7 @@ pub fn type_to_surql_generation_with_prefix_test() {
           type_: surreal_type.String,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -148,6 +165,7 @@ pub fn type_to_surql_generation_with_prefix_test() {
           type_: surreal_type.Int,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
         extractor.TableField(
           dependencies: [],
@@ -155,6 +173,7 @@ pub fn type_to_surql_generation_with_prefix_test() {
           type_: surreal_type.Float,
           linked_enum: option.None,
           object_fields: [],
+          raw_string: "__IGNORED__",
         ),
       ],
       "nested_",
