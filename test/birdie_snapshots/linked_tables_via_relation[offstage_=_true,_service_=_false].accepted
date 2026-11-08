@@ -7,10 +7,10 @@ test_name: linked_tables_via_relation_with_offstage_test
 // [./src/db/test/linked_table_a.gleam]
 import gleam/json
 import gleam/option
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/table_spec as bs_table_spec
+import pont/encode
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql
@@ -131,10 +131,10 @@ pub const query_node = [
 // [./src/db/test/linked_table_b.gleam]
 import gleam/json
 import gleam/option
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/table_spec as bs_table_spec
+import pont/encode
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql
@@ -257,11 +257,11 @@ import db/test/linked_table_a
 import db/test/linked_table_b
 import gleam/json
 import gleam/option
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/record as os_record
 import offstage_suweal/table_spec as bs_table_spec
+import pont/encode
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/record

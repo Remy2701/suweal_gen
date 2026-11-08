@@ -38,7 +38,7 @@ pub fn to_surql(self: User) -> surreal_ql.SurrealQL {
         ),
       ),
       #("rc", self.rc |> record.to_surql(id.to_surql)),
-      #("obj", surreal_ql.from_json_value(self.obj)),
+      #("obj", surreal_ql.from_value(self.obj)),
       #("nested_obj", nested_obj_to_surql(self.nested_obj)),
       #("p", point.to_surql(self.p)),
       #("e", surreal_ql.String(enum_to_string(self.e))),

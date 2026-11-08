@@ -6,7 +6,7 @@ test_name: query_builder_generation_with_prefix_test
 ---
 import gleam/option
 import gleam/time/timestamp
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/identifier
 import suweal/point
 import suweal/record

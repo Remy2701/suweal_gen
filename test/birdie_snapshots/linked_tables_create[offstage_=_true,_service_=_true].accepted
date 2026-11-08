@@ -7,7 +7,7 @@ test_name: linked_tables_create_with_service_test
 import db/test/linked_table_a
 import db/test/linked_table_b
 import gleam/option
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/record

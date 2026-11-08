@@ -4,7 +4,7 @@ title: type_decoder_generation_with_prefix_and_offstage_test
 file: ./test/builder/type_decoder_test.gleam
 test_name: type_decoder_generation_with_prefix_and_offstage_test
 ---
-import offstage/dynamic/serialize
+import pont/serialize
 
 pub fn nested_serializer() -> serialize.Serializer(Nested) {
   serialize.object(

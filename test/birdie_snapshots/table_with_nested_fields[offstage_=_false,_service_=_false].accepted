@@ -7,7 +7,7 @@ test_name: table_with_nested_fields_test
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option
-import json_value
+import pont/value
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql

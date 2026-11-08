@@ -6,10 +6,10 @@ test_name: simple_user_table_with_backstage_test
 ---
 import gleam/json
 import gleam/option
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/table_spec as bs_table_spec
+import pont/encode
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql

@@ -5,10 +5,10 @@ file: ./test/builder/type_decoder_test.gleam
 test_name: type_decoder_generation_with_service_test
 ---
 import gleam/option
-import offstage/dynamic/serialize
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/point as os_point
 import offstage_suweal/record as os_record
+import pont/serialize
 
 pub fn serializer() -> serialize.Serializer(User) {
   serialize.object(
@@ -95,7 +95,7 @@ pub fn serializer() -> serialize.Serializer(User) {
       use context, obj <- serialize.field(
         context,
         "obj",
-        serialize.json_value(),
+        serialize.value(),
         fn(data: User) {
           data.obj
         },

@@ -7,7 +7,7 @@ test_name: simple_delete_only_user_with_service_test
 import db/test/simple_user_table
 import gleam/json
 import gleam/option
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql
@@ -19,7 +19,7 @@ pub type QueryResult = Nil
 pub const to_json = json.null
 
 pub fn serializer() {
-  serialize.nil()
+  serialize.null()
 }
 
 pub fn parameters(id id: identifier.Identifier(simple_user_table.User)) -> List(#(String, surreal_ql.SurrealQL)) {

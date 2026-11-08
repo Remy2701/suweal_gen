@@ -8,7 +8,7 @@ import db/test/linked_table_a
 import db/test/linked_table_b
 import db/test/linked_table_c
 import gleam/option
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/record

@@ -4,7 +4,7 @@ title: enum_decoder_generation_with_service_test
 file: ./test/builder/enum_decoder_test.gleam
 test_name: enum_decoder_generation_with_service_test
 ---
-import offstage/dynamic/serialize
+import pont/serialize
 
 pub fn color_serializer() -> serialize.Serializer(Color) {
   serialize.string_enum([Red, Green, Blue], color_to_string)

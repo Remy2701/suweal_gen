@@ -7,7 +7,7 @@ test_name: type_decoder_generation_test
 import gleam/dynamic/decode
 import gleam/int
 import gleam/time/timestamp
-import json_value
+import pont/serialize
 import suweal/identifier
 import suweal/point
 import suweal/record
@@ -16,7 +16,7 @@ pub fn decoder() -> decode.Decoder(User) {
   use e <- decode.field("e", enum_decoder())
   use p <- decode.field("p", point.decoder())
   use nested_obj <- decode.field("nested_obj", nested_obj_decoder())
-  use obj <- decode.field("obj", json_value.decoder())
+  use obj <- decode.field("obj", serialize.value().decoder)
   use rc <- decode.field(
     "rc",
     record.typed_decoder(

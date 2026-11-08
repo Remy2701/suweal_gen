@@ -6,7 +6,7 @@ test_name: simple_select_user_with_service_test
 ---
 import db/test/simple_user_table
 import gleam/option
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/node
 import suweal/surreal_ql
 import suweal_service

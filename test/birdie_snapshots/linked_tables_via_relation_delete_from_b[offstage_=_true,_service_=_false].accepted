@@ -9,7 +9,7 @@ import db/test/linked_table_b
 import db/test/linked_table_c
 import gleam/json
 import gleam/option
-import offstage/dynamic/serialize
+import pont/serialize
 import suweal/identifier
 import suweal/node
 import suweal/record
@@ -20,7 +20,7 @@ pub type QueryResult = Nil
 pub const to_json = json.null
 
 pub fn serializer() {
-  serialize.nil()
+  serialize.null()
 }
 
 pub fn parameters(b b: identifier.Identifier(linked_table_b.B)) -> List(#(String, surreal_ql.SurrealQL)) {

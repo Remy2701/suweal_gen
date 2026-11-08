@@ -5,8 +5,8 @@ file: ./test/builder/type_to_json_test.gleam
 test_name: type_to_json_generation_with_service_test
 ---
 import gleam/json
-import offstage/dynamic/encode
-import offstage/dynamic/serialize
+import pont/encode
+import pont/serialize
 
 pub fn to_json(self: User) -> json.Json {
   encode.encode_json(self, serialize.encoder(serializer()))
