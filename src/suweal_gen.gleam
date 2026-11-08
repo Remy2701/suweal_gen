@@ -25,7 +25,7 @@ import parser
 import shellout
 import simplifile
 
-const suweal_version = "0.4.3-local"
+const suweal_version = "0.5.1"
 
 type Command {
   GenCommand(config: common.Configuration)
@@ -388,7 +388,7 @@ fn new_version(
   common.VersionConfig(
     version: name,
     version_number: number,
-    path: config.path <> "/versions_/" <> name,
+    path: config.path <> "/versions/" <> name,
     suweal_version:,
     date: timestamp.system_time(),
   )
@@ -415,7 +415,7 @@ fn plan_versions(
       Ok(VersionPlan(
         config: common.VersionsConfig(
           [new_version(config, 1)],
-          config.path <> "/migrations_",
+          config.path <> "/migrations",
           hashes,
         ),
         previous: 0,
@@ -476,7 +476,7 @@ fn write_generated_files(
   let source_path = file.path <> ".gleam"
   let snapshot_path =
     config.path
-    <> "/versions_/v"
+    <> "/versions/v"
     <> int.to_string(version)
     <> string.remove_prefix(file.path, config.path)
     <> ".gleam"
@@ -491,7 +491,7 @@ fn read_previous_fields(
   version: Int,
 ) -> Result(List(migration.MigrationTableField), String) {
   let path =
-    config.path <> "/versions_/v" <> int.to_string(version) <> "/fields.json"
+    config.path <> "/versions/v" <> int.to_string(version) <> "/fields.json"
 
   use content <- result.try(
     simplifile.read(path)
@@ -526,13 +526,13 @@ fn write_migration(
     migration.find_different_fields(fields, previous_fields, tables)
 
   use _ <- result.try(create_dir_and_write(
-    config.path <> "/versions_/v" <> int.to_string(version) <> "/fields.json",
+    config.path <> "/versions/v" <> int.to_string(version) <> "/fields.json",
     json.to_string(json.array(fields, migration.migration_table_field_to_json)),
   ))
 
   let migration_path =
     config.path
-    <> "/migrations_/migration_"
+    <> "/migrations/migration_"
     <> int.to_string(version)
     <> ".gleam"
   use _ <- result.try(create_dir_and_write(
@@ -595,7 +595,7 @@ fn run_gen(config: common.Configuration) -> Result(Nil, String) {
       use _ <- result.try(write_generated_files(config, generated, version))
       print_success(
         "Wrote snapshot "
-        <> dim(config.path <> "/versions_/v" <> int.to_string(version)),
+        <> dim(config.path <> "/versions/v" <> int.to_string(version)),
       )
 
       use _ <- result.try(case config.versioning {
@@ -637,7 +637,7 @@ fn run_clear(path: String) -> Result(Nil, String) {
   use files <- result.try(list_files(path, []))
   let targets =
     list.flatten([
-      [path <> "/versions_", path <> "/versions.json", path <> "/migrations_"],
+      [path <> "/versions", path <> "/versions.json", path <> "/migrations"],
       list.map(files, fn(file) { file <> ".gleam" }),
     ])
 

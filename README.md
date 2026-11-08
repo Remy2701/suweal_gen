@@ -46,7 +46,7 @@ gleam run -m suweal_gen -- gen --offstage
 With `--versioning`, each generation is stored as a numbered version. The
 generator records a hash of every `.surql` file in `versions.json` and, when
 the schema changed since the previous version, writes the field changes as a
-migration in `migrations_/`. Generated versions live in `versions_/`.
+migration in `migrations/`. Generated versions live in `versions/`.
 
 If no `.surql` file changed since the last version, generation is skipped. Use
 `--force` to generate anyway.
@@ -54,7 +54,7 @@ If no `.surql` file changed since the last version, generation is skipped. Use
 ## `clear`
 
 Removes everything the generator produced under `path`: the generated `.gleam`
-files, `versions_/`, `versions.json` and `migrations_/`.
+files, `versions/`, `versions.json` and `migrations/`.
 
 ```sh
 gleam run -m suweal_gen -- clear [path]
