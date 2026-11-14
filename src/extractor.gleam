@@ -1,3 +1,4 @@
+import common
 import gleam/dict
 import gleam/function
 import gleam/io
@@ -82,7 +83,7 @@ fn resolve_nested_field(
           type_: type_,
           linked_enum: enum,
           object_fields: object_fields,
-          raw_string: node.to_string(raw),
+          raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
         ),
       ])
       |> Ok
@@ -101,7 +102,7 @@ fn resolve_nested_field(
             type_: type_,
             linked_enum: enum,
             object_fields: object_fields,
-            raw_string: node.to_string(raw),
+            raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
           ),
         ],
         raw,
@@ -162,7 +163,7 @@ fn extract_normal_table(
         },
         enums: [],
         delegated: as_,
-        raw_string: node.to_string(raw),
+        raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
       ),
     )),
   )
@@ -196,7 +197,7 @@ fn extract_relation_table(
         ],
         enums: [],
         delegated: option.None,
-        raw_string: node.to_string(node),
+        raw_string: node |> common.force_if_not_exists() |> node.to_string(),
       ),
     )),
   )

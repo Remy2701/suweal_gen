@@ -5,6 +5,7 @@ import gleam/list
 import gleam/option
 import gleam/time/calendar
 import gleam/time/timestamp
+import suweal/node
 import suweal/surreal_type
 
 pub type VersionsConfig {
@@ -117,4 +118,14 @@ pub type ParameterProperty {
     dependencies: List(String),
     nested: option.Option(String),
   )
+}
+
+pub fn force_if_not_exists(node: node.Node) -> node.Node {
+  case node {
+    node.DefineTable(..) ->
+      node.DefineTable(..node, strategy: node.DefineTableIfNotExists)
+    node.DefineField(..) ->
+      node.DefineField(..node, strategy: node.DefineFieldIfNotExists)
+    _ -> node
+  }
 }

@@ -36,7 +36,7 @@ fn retrieve_dependencies_(
 ) -> set.Set(String) {
   list.fold(fields, set.new(), fn(acc, field) {
     let acc = case field.type_ {
-      surreal_type.Datetime -> acc |> set.insert("gleam/time/timestamp")
+      surreal_type.Datetime -> acc
       surreal_type.Option(surreal_type.Datetime) -> acc
       surreal_type.Identifier(name) ->
         acc
@@ -51,7 +51,6 @@ fn retrieve_dependencies_(
         }
       surreal_type.Record(name) ->
         acc
-        |> set.insert("suweal/record")
         |> case
           dict.get(
             tables,
@@ -81,12 +80,7 @@ fn retrieve_dependencies(
 ) -> module.Module {
   list.fold(fields, module, fn(module, field) {
     let module = case field.type_ {
-      surreal_type.Datetime ->
-        module.add_import(module, ["gleam", "time", "timestamp"])
-      surreal_type.Option(surreal_type.Datetime) ->
-        module
-        |> module.add_import(["gleam", "option"])
-        |> module.add_import(["gleam", "time", "timestamp"])
+      surreal_type.Datetime -> module
       surreal_type.Identifier(name) ->
         module
         |> case
@@ -103,7 +97,6 @@ fn retrieve_dependencies(
         }
       surreal_type.Record(name) ->
         module
-        |> module.add_import(["suweal", "record"])
         |> case
           dict.get(
             tables,
@@ -244,10 +237,7 @@ fn resolve_dependencies(
         module.add_import(module, ["gleam", "option"]),
         list.append(fields, [field]),
       )
-      surreal_type.Object -> #(
-        module.add_import(module, ["pont", "value"]),
-        list.append(fields, [field]),
-      )
+      surreal_type.Object -> #(module, list.append(fields, [field]))
       surreal_type.Point -> #(
         module.add_import(module, ["suweal", "point"]),
         list.append(fields, [field]),
@@ -358,7 +348,6 @@ fn link_type(
               Ok(current) ->
                 set.from_list([
                   id_case.to_gleam_path(current.path),
-                  "suweal/record",
                 ])
               _ -> {
                 io.println("Warning: Could not resolve table `" <> inner <> "`")
