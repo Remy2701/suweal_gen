@@ -59,6 +59,6 @@ pub fn parameters(
     #("obj", obj),
     #("nested_obj", nested_to_surql(nested_obj)),
     #("p", point.to_surql(p)),
-    #("e", surreal_ql.String(.enum_to_string(e))),
+    #("e", surreal_ql.String(enum_to_string(e))),
   ]
 }

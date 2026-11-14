@@ -103,6 +103,7 @@ pub const query_string = "DEFINE TABLE a TYPE NORMAL SCHEMAFULL PERMISSIONS NONE
 pub const query_node = [
   node.DefineTable(
     name: "a",
+    strategy: node.DefineTableRegular,
     schema: node.Schemafull,
     type_: node.NormalTable,
     permissions: [node.PermissionNone],
@@ -110,6 +111,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("a0"),
+    strategy: node.DefineFieldRegular,
     table: "a",
     type_: surreal_type.String,
     default: option.Some(node.None),
@@ -119,6 +121,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("a1"),
+    strategy: node.DefineFieldRegular,
     table: "a",
     type_: surreal_type.Int,
     default: option.Some(node.None),
@@ -236,6 +239,7 @@ pub const query_string = "DEFINE TABLE b TYPE NORMAL SCHEMAFULL PERMISSIONS NONE
 pub const query_node = [
   node.DefineTable(
     name: "b",
+    strategy: node.DefineTableRegular,
     schema: node.Schemafull,
     type_: node.NormalTable,
     permissions: [node.PermissionNone],
@@ -243,6 +247,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("b0"),
+    strategy: node.DefineFieldRegular,
     table: "b",
     type_: surreal_type.Record("a"),
     default: option.Some(node.None),
@@ -252,6 +257,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("b1"),
+    strategy: node.DefineFieldRegular,
     table: "b",
     type_: surreal_type.Int,
     default: option.Some(node.None),

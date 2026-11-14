@@ -116,6 +116,7 @@ pub const query_string = "DEFINE TABLE user TYPE NORMAL SCHEMAFULL PERMISSIONS N
 pub const query_node = [
   node.DefineTable(
     name: "user",
+    strategy: node.DefineTableRegular,
     schema: node.Schemafull,
     type_: node.NormalTable,
     permissions: [node.PermissionNone],
@@ -123,6 +124,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("username"),
+    strategy: node.DefineFieldRegular,
     table: "user",
     type_: surreal_type.String,
     default: option.Some(node.None),
@@ -132,6 +134,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("email"),
+    strategy: node.DefineFieldRegular,
     table: "user",
     type_: surreal_type.String,
     default: option.Some(node.None),
@@ -141,6 +144,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("password"),
+    strategy: node.DefineFieldRegular,
     table: "user",
     type_: surreal_type.String,
     default: option.None,

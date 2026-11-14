@@ -25,6 +25,7 @@ pub type Token {
   Delete
   Desc
   Else
+  Exists
   End
   Field
   Fields
@@ -48,6 +49,7 @@ pub type Token {
   Order
   Out
   Outside
+  Overwrite
   Permissions
   Relation
   Relate
@@ -205,6 +207,7 @@ fn do_end_identifier(
     _, "DELETE" -> state |> add_token(Delete)
     _, "DESC" -> state |> add_token(Desc)
     _, "ELSE" -> state |> add_token(Else)
+    _, "EXISTS" -> state |> add_token(Exists)
     _, "END" -> state |> add_token(End)
     _, "FIELD" -> state |> add_token(Field)
     _, "FIELDS" -> state |> add_token(Fields)
@@ -230,6 +233,7 @@ fn do_end_identifier(
     _, "OR" -> state |> add_token(Or)
     _, "OUT" -> state |> add_token(Out)
     _, "OUTSIDE" -> state |> add_token(Outside)
+    _, "OVERWRITE" -> state |> add_token(Overwrite)
     _, "PERMISSIONS" -> state |> add_token(Permissions)
     _, "RELATION" -> state |> add_token(Relation)
     _, "RELATE" -> state |> add_token(Relate)

@@ -30,6 +30,79 @@ pub fn parse_define_table_test() {
     == [
       node.DefineTable(
         name: "user",
+        strategy: node.DefineTableRegular,
+        type_: node.NormalTable,
+        schema: node.Schemafull,
+        permissions: [node.PermissionNone],
+        as_: option.None,
+      ),
+    ]
+}
+
+pub fn parse_define_overwrite_table_test() {
+  let str =
+    "DEFINE TABLE OVERWRITE user TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Table,
+      lexer.Overwrite,
+      lexer.Identifier("user"),
+      lexer.Type,
+      lexer.Normal,
+      lexer.Schemafull,
+      lexer.Permissions,
+      lexer.None,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
+
+  assert ast
+    == [
+      node.DefineTable(
+        name: "user",
+        strategy: node.DefineTableOverwrite,
+        type_: node.NormalTable,
+        schema: node.Schemafull,
+        permissions: [node.PermissionNone],
+        as_: option.None,
+      ),
+    ]
+}
+
+pub fn parse_define_if_not_exists_table_test() {
+  let str =
+    "DEFINE TABLE IF NOT EXISTS user TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Table,
+      lexer.If,
+      lexer.Not,
+      lexer.Exists,
+      lexer.Identifier("user"),
+      lexer.Type,
+      lexer.Normal,
+      lexer.Schemafull,
+      lexer.Permissions,
+      lexer.None,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
+
+  assert ast
+    == [
+      node.DefineTable(
+        name: "user",
+        strategy: node.DefineTableIfNotExists,
         type_: node.NormalTable,
         schema: node.Schemafull,
         permissions: [node.PermissionNone],
@@ -65,6 +138,89 @@ pub fn parse_define_string_field_test() {
     == [
       node.DefineField(
         name: node.Identifier("a"),
+        strategy: node.DefineFieldRegular,
+        table: "table",
+        type_: surreal_type.String,
+        flexible: False,
+        default: option.Some(node.None),
+        assert_: option.None,
+        permissions: [node.PermissionFull],
+      ),
+    ]
+}
+
+pub fn parse_define_overwrite_string_field_test() {
+  let str =
+    "DEFINE FIELD OVERWRITE a ON table TYPE string DEFAULT NONE PERMISSIONS FULL;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.Overwrite,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
+
+  assert ast
+    == [
+      node.DefineField(
+        name: node.Identifier("a"),
+        strategy: node.DefineFieldOverwrite,
+        table: "table",
+        type_: surreal_type.String,
+        flexible: False,
+        default: option.Some(node.None),
+        assert_: option.None,
+        permissions: [node.PermissionFull],
+      ),
+    ]
+}
+
+pub fn parse_define_if_not_exists_string_field_test() {
+  let str =
+    "DEFINE FIELD IF NOT EXISTS a ON table TYPE string DEFAULT NONE PERMISSIONS FULL;"
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Field,
+      lexer.If,
+      lexer.Not,
+      lexer.Exists,
+      lexer.Identifier("a"),
+      lexer.On,
+      lexer.Identifier("table"),
+      lexer.Type,
+      lexer.Identifier("string"),
+      lexer.Default,
+      lexer.None,
+      lexer.Permissions,
+      lexer.Full,
+      lexer.Semicolon,
+    ]
+
+  let assert Ok(ast) = parser.parse(tokens) as "Failed to parse input"
+
+  assert ast
+    == [
+      node.DefineField(
+        name: node.Identifier("a"),
+        strategy: node.DefineFieldIfNotExists,
         table: "table",
         type_: surreal_type.String,
         flexible: False,
@@ -105,6 +261,7 @@ pub fn parse_define_optional_string_field_test() {
     == [
       node.DefineField(
         name: node.Identifier("a"),
+        strategy: node.DefineFieldRegular,
         table: "table",
         type_: surreal_type.Option(surreal_type.String),
         flexible: False,
@@ -153,6 +310,7 @@ pub fn parse_define_string_field_with_assert_test() {
     == [
       node.DefineField(
         name: node.Identifier("a"),
+        strategy: node.DefineFieldRegular,
         table: "table",
         type_: surreal_type.String,
         flexible: False,
@@ -213,6 +371,7 @@ pub fn parse_define_string_optional_field_with_assert_test() {
     == [
       node.DefineField(
         name: node.Identifier("a"),
+        strategy: node.DefineFieldRegular,
         table: "table",
         type_: surreal_type.Option(surreal_type.String),
         flexible: False,

@@ -725,6 +725,7 @@ fn on_token(
 fn do_define_normal_table(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
+  strategy: node.DefineTableStrategy,
   name: String,
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
   use schema, input <- consume_keyword_one_of(
@@ -745,6 +746,7 @@ fn do_define_normal_table(
     add_node(
       node.DefineTable(
         name: name,
+        strategy: strategy,
         type_: node.NormalTable,
         schema: schema,
         permissions: [permissions],
@@ -760,6 +762,7 @@ fn do_define_normal_table(
 fn do_define_relation_table(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
+  strategy: node.DefineTableStrategy,
   name: String,
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
   use input <- consume_keyword(lexer.In, input)
@@ -780,6 +783,7 @@ fn do_define_relation_table(
     add_node(
       node.DefineTable(
         name: name,
+        strategy: strategy,
         type_: node.RelationTable(in: in, out: out),
         schema: schema,
         permissions: [permissions],
@@ -796,13 +800,26 @@ fn do_define_table(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let #(strategy, input) = case input {
+    [
+      Positioned(lexer.If, ..),
+      Positioned(lexer.Not, ..),
+      Positioned(lexer.Exists, ..),
+      ..rest
+    ] -> #(node.DefineTableIfNotExists, rest)
+    [Positioned(lexer.Overwrite, ..), ..rest] -> #(
+      node.DefineTableOverwrite,
+      rest,
+    )
+    _ -> #(node.DefineTableRegular, input)
+  }
   use identifier, input <- consume_identifier(input)
   use input <- consume_keyword(lexer.Type, input)
   case input {
     [Positioned(lexer.Normal, ..), ..rest] ->
-      do_define_normal_table(state, rest, identifier)
+      do_define_normal_table(state, rest, strategy, identifier)
     [Positioned(lexer.Relation, ..), ..rest] ->
-      do_define_relation_table(state, rest, identifier)
+      do_define_relation_table(state, rest, strategy, identifier)
     [value, ..] -> #(
       state,
       Failure(UnexpectedToken(
@@ -821,6 +838,19 @@ fn do_define_field(
   state: ParserState,
   input: List(Positioned(lexer.Token)),
 ) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let #(strategy, input) = case input {
+    [
+      Positioned(lexer.If, ..),
+      Positioned(lexer.Not, ..),
+      Positioned(lexer.Exists, ..),
+      ..rest
+    ] -> #(node.DefineFieldIfNotExists, rest)
+    [Positioned(lexer.Overwrite, ..), ..rest] -> #(
+      node.DefineFieldOverwrite,
+      rest,
+    )
+    _ -> #(node.DefineFieldRegular, input)
+  }
   use name, input <- consume_expression(input)
   use input <- consume_keyword(lexer.On, input)
   use table, input <- consume_identifier(input)
@@ -854,6 +884,7 @@ fn do_define_field(
     add_node(
       node.DefineField(
         name: name,
+        strategy: strategy,
         table: table,
         type_: type_,
         default: default,

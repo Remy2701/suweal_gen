@@ -104,6 +104,7 @@ pub const query_string = "DEFINE TABLE post TYPE NORMAL SCHEMAFULL PERMISSIONS N
 pub const query_node = [
   node.DefineTable(
     name: "post",
+    strategy: node.DefineTableRegular,
     schema: node.Schemafull,
     type_: node.NormalTable,
     permissions: [node.PermissionNone],
@@ -111,6 +112,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("title"),
+    strategy: node.DefineFieldRegular,
     table: "post",
     type_: surreal_type.String,
     default: option.Some(node.None),
@@ -120,6 +122,7 @@ pub const query_node = [
   ),
   node.DefineField(
     name: node.Identifier("status"),
+    strategy: node.DefineFieldRegular,
     table: "post",
     type_: surreal_type.String,
     default: option.Some(node.None),
