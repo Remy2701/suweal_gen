@@ -30,97 +30,6 @@ import suweal/surreal_type.{type SurrealType}
 //                                         Dependencies                                          //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-fn retrieve_dependencies_(
-  fields: List(extractor.TableField),
-  tables: dict.Dict(String, extractor.TableInfo),
-) -> set.Set(String) {
-  list.fold(fields, set.new(), fn(acc, field) {
-    let acc = case field.type_ {
-      surreal_type.Datetime -> acc
-      surreal_type.Option(surreal_type.Datetime) -> acc
-      surreal_type.Identifier(name) ->
-        acc
-        |> case
-          dict.get(
-            tables,
-            id_case.string_to_snake_case(id_case.without_namespace(name)),
-          )
-        {
-          Ok(info) -> set.insert(_, info.path |> string.remove_prefix("./src/"))
-          _ -> function.identity
-        }
-      surreal_type.Record(name) ->
-        acc
-        |> case
-          dict.get(
-            tables,
-            id_case.string_to_snake_case(id_case.without_namespace(name)),
-          )
-        {
-          Ok(info) -> set.insert(_, info.path |> string.remove_prefix("./src/"))
-          _ -> function.identity
-        }
-      surreal_type.Option(_) -> acc
-      surreal_type.Object -> acc
-      surreal_type.Point -> acc
-      _ -> acc
-    }
-
-    list.fold(field.object_fields, acc, fn(acc, field) {
-      retrieve_dependencies_([field], tables)
-      |> set.union(acc)
-    })
-  })
-}
-
-fn retrieve_dependencies(
-  module: module.Module,
-  fields: List(extractor.TableField),
-  tables: dict.Dict(String, extractor.TableInfo),
-) -> module.Module {
-  list.fold(fields, module, fn(module, field) {
-    let module = case field.type_ {
-      surreal_type.Datetime -> module
-      surreal_type.Identifier(name) ->
-        module
-        |> case
-          dict.get(
-            tables,
-            id_case.string_to_snake_case(id_case.without_namespace(name)),
-          )
-        {
-          Ok(info) -> module.add_import(
-            _,
-            info.path |> string.remove_prefix("./src/") |> string.split("/"),
-          )
-          _ -> function.identity
-        }
-      surreal_type.Record(name) ->
-        module
-        |> case
-          dict.get(
-            tables,
-            id_case.string_to_snake_case(id_case.without_namespace(name)),
-          )
-        {
-          Ok(info) -> module.add_import(
-            _,
-            info.path |> string.remove_prefix("./src/") |> string.split("/"),
-          )
-          _ -> function.identity
-        }
-      surreal_type.Option(_) -> module
-      surreal_type.Object -> module
-      surreal_type.Point -> module
-      _ -> module
-    }
-
-    list.fold(field.object_fields, module, fn(module, field) {
-      retrieve_dependencies(module, [field], tables)
-    })
-  })
-}
-
 fn resolve_dependencies(
   module: module.Module,
   fields: List(extractor.TableField),
@@ -143,16 +52,6 @@ fn resolve_dependencies(
       surreal_type.Record(name) -> {
         let table = dict.get(tables, string.lowercase(name))
 
-        let module = module.add_import(module, ["suweal", "record"])
-        let module = case table {
-          Ok(info) ->
-            module.add_import(
-              module,
-              info.path |> string.remove_prefix("./src/") |> string.split("/"),
-            )
-          _ -> module
-        }
-
         #(
           module,
           list.append(fields, [
@@ -174,16 +73,6 @@ fn resolve_dependencies(
       surreal_type.Array(surreal_type.Record(name)) -> {
         let table = dict.get(tables, string.lowercase(name))
 
-        let module = module.add_import(module, ["suweal", "record"])
-        let module = case table {
-          Ok(info) ->
-            module.add_import(
-              module,
-              info.path |> string.remove_prefix("./src/") |> string.split("/"),
-            )
-          _ -> module
-        }
-
         #(
           module,
           list.append(fields, [
@@ -204,17 +93,6 @@ fn resolve_dependencies(
       }
       surreal_type.Option(surreal_type.Record(name)) -> {
         let table = dict.get(tables, string.lowercase(name))
-
-        let module = module.add_import(module, ["suweal", "record"])
-        let module = case table {
-          Ok(info) ->
-            module.add_import(
-              module,
-              info.path |> string.remove_prefix("./src/") |> string.split("/"),
-            )
-          _ -> module
-        }
-
         #(
           module,
           list.append(fields, [
@@ -233,22 +111,11 @@ fn resolve_dependencies(
           ]),
         )
       }
-      surreal_type.Option(_) -> #(
-        module.add_import(module, ["gleam", "option"]),
-        list.append(fields, [field]),
-      )
+      surreal_type.Option(_) -> #(module, list.append(fields, [field]))
       surreal_type.Object -> #(module, list.append(fields, [field]))
-      surreal_type.Point -> #(
-        module.add_import(module, ["suweal", "point"]),
-        list.append(fields, [field]),
-      )
+      surreal_type.Point -> #(module, list.append(fields, [field]))
       _ -> #(module, list.append(fields, [field]))
     }
-
-    let module =
-      list.fold(field.object_fields, module, fn(module, field) {
-        retrieve_dependencies(module, [field], tables)
-      })
 
     #(module, fields)
   })
@@ -969,7 +836,7 @@ fn do_define_normal_table_node(
   node: node.Node,
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> Result(module.Module, String) {
-  let assert node.DefineTable(name:, as_:, ..) = node
+  let assert node.DefineTable(name:, ..) = node
   use info <- result.try(
     dict.get(tables, name)
     |> result.replace_error("Unknown table for field: " <> name),
@@ -1007,31 +874,6 @@ fn do_define_normal_table_node(
     |> module.root.add(type_to_json.generate(config, name, fields, ""))
     |> module.root.add(type_to_surql.generate(name, fields, ""))
     |> module.root.add(table_spec.generate(config, name))
-
-  let module = case as_, list.find(info.fields, fn(f) { f.name == "id" }) {
-    option.Some(_),
-      Ok(extractor.TableField(type_: surreal_type.Identifier(name), ..))
-    -> {
-      case
-        dict.get(
-          tables,
-          string.lowercase(
-            string.split(name, ".") |> list.last() |> result.unwrap(""),
-          ),
-        )
-      {
-        Ok(info) ->
-          module.add_import(
-            module,
-            info.path
-              |> string.remove_prefix("./src/")
-              |> string.split("/"),
-          )
-        _ -> module
-      }
-    }
-    _, _ -> module
-  }
 
   Ok(module)
 }
@@ -1119,7 +961,8 @@ fn do_select_node(
             module.binop.access(
               module.identifier.create(namespace),
               module.identifier.create(id_case.string_to_pascal_case(table)),
-            ),
+            )
+              |> module.add_import(["#TABLE:" <> namespace]),
           )
           |> module.const_definition.public()
           |> module.const_definition.as_type(),
@@ -1130,7 +973,8 @@ fn do_select_node(
             module.binop.access(
               module.identifier.create(namespace),
               module.identifier.create("to_json"),
-            ),
+            )
+              |> module.add_import(["#TABLE:" <> namespace]),
           )
           |> module.const_definition.public(),
         )
@@ -1144,7 +988,8 @@ fn do_select_node(
               module.binop.access(
                 module.identifier.create(namespace),
                 module.identifier.create("serializer"),
-              ),
+              )
+                |> module.add_import(["#TABLE:" <> namespace]),
             )
             |> module.const_definition.public(),
           )
@@ -1156,25 +1001,26 @@ fn do_select_node(
               module.binop.access(
                 module.identifier.create(namespace),
                 module.identifier.create("decoder"),
-              ),
+              )
+                |> module.add_import(["#TABLE:" <> namespace]),
             )
             |> module.const_definition.public(),
           )
       }
 
-      let dependencies =
-        set.from_list([path |> string.join("/")])
-        |> set.union(
-          list.flat_map(table_info.fields, fn(f) { f.dependencies })
-          |> set.from_list,
-        )
+      // let dependencies =
+      //   set.from_list([])
+      //   |> set.union(
+      //     list.flat_map(table_info.fields, fn(f) { f.dependencies })
+      //     |> set.from_list,
+      //   )
 
-      let module =
-        dependencies
-        |> set.to_list()
-        |> list.fold(module, fn(module, dependency) {
-          module.add_import(module, string.split(dependency, "/"))
-        })
+      // let module =
+      //   dependencies
+      //   |> set.to_list()
+      //   |> list.fold(module, fn(module, dependency) {
+      //     module.add_import(module, string.split(dependency, "/"))
+      //   })
 
       module
     }
@@ -1243,20 +1089,20 @@ fn do_select_node(
           "",
         ))
 
-      let dependencies =
-        set.from_list([path |> string.join("/")])
-        |> set.union(
-          list.flat_map(table_info.fields, fn(f) { f.dependencies })
-          |> set.from_list,
-        )
-        |> set.union(retrieve_dependencies_(fields, tables))
+      // let dependencies =
+      //   set.from_list([])
+      //   |> set.union(
+      //     list.flat_map(table_info.fields, fn(f) { f.dependencies })
+      //     |> set.from_list,
+      //   )
+      //   |> set.union(retrieve_dependencies_(fields, tables))
 
-      let module =
-        dependencies
-        |> set.to_list()
-        |> list.fold(module, fn(module, dependency) {
-          module.add_import(module, string.split(dependency, "/"))
-        })
+      // let module =
+      //   dependencies
+      //   |> set.to_list()
+      //   |> list.fold(module, fn(module, dependency) {
+      //     module.add_import(module, string.split(dependency, "/"))
+      //   })
 
       module
     }
@@ -1335,7 +1181,8 @@ fn do_update_node(
         module.binop.access(
           module.identifier.create(namespace),
           module_common.type_identifier(target),
-        ),
+        )
+          |> module.add_import(["#TABLE:" <> namespace]),
       )
       |> module.const_definition.public()
       |> module.const_definition.as_type(),
@@ -1350,7 +1197,8 @@ fn do_update_node(
           module.binop.access(
             module.identifier.create(namespace),
             module.identifier.create("serializer"),
-          ),
+          )
+            |> module.add_import(["#TABLE:" <> namespace]),
         )
         |> module.const_definition.public()
       False ->
@@ -1359,7 +1207,8 @@ fn do_update_node(
           module.binop.access(
             module.identifier.create(namespace),
             module.identifier.create("decoder"),
-          ),
+          )
+            |> module.add_import(["#TABLE:" <> namespace]),
         )
         |> module.const_definition.public()
     })
@@ -1372,21 +1221,22 @@ fn do_update_node(
         module.binop.access(
           module.identifier.create(namespace),
           module.identifier.create("to_json"),
-        ),
+        )
+          |> module.add_import(["#TABLE:" <> namespace]),
       )
       |> module.const_definition.public(),
     )
 
-  let dependencies = set.from_list([path |> string.join("/")])
-  let dependencies =
-    set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
+  // let dependencies = set.from_list([])
+  // let dependencies =
+  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
 
-  let module =
-    dependencies
-    |> set.to_list()
-    |> list.fold(module, fn(module, dependency) {
-      module.add_import(module, string.split(dependency, "/"))
-    })
+  // let module =
+  //   dependencies
+  //   |> set.to_list()
+  //   |> list.fold(module, fn(module, dependency) {
+  //     module.add_import(module, string.split(dependency, "/"))
+  //   })
 
   let parameters =
     list.filter_map(
@@ -1457,7 +1307,8 @@ fn do_create_node(
         module.binop.access(
           module.identifier.create(namespace),
           module_common.type_identifier(target),
-        ),
+        )
+          |> module.add_import(["#TABLE:" <> namespace]),
       )
       |> module.const_definition.public()
       |> module.const_definition.as_type(),
@@ -1472,7 +1323,8 @@ fn do_create_node(
           module.binop.access(
             module.identifier.create(namespace),
             module.identifier.create("serializer"),
-          ),
+          )
+            |> module.add_import(["#TABLE:" <> namespace]),
         )
         |> module.const_definition.public()
       False ->
@@ -1481,7 +1333,8 @@ fn do_create_node(
           module.binop.access(
             module.identifier.create(namespace),
             module.identifier.create("decoder"),
-          ),
+          )
+            |> module.add_import(["#TABLE:" <> namespace]),
         )
         |> module.const_definition.public()
     })
@@ -1494,21 +1347,22 @@ fn do_create_node(
         module.binop.access(
           module.identifier.create(namespace),
           module.identifier.create("to_json"),
-        ),
+        )
+          |> module.add_import(["#TABLE:" <> namespace]),
       )
       |> module.const_definition.public(),
     )
 
-  let dependencies = set.from_list([path |> string.join("/")])
-  let dependencies =
-    set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
+  // let dependencies = set.from_list([])
+  // let dependencies =
+  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
 
-  let module =
-    dependencies
-    |> set.to_list()
-    |> list.fold(module, fn(module, dependency) {
-      module.add_import(module, string.split(dependency, "/"))
-    })
+  // let module =
+  //   dependencies
+  //   |> set.to_list()
+  //   |> list.fold(module, fn(module, dependency) {
+  //     module.add_import(module, string.split(dependency, "/"))
+  //   })
 
   let parameters =
     list.filter_map(
@@ -1624,10 +1478,6 @@ fn do_delete_node(
           )
           |> module.add_import(["gleam", "dynamic", "decode"])
       }
-
-      let module =
-        retrieve_dependencies(module, table_info.fields, tables)
-        |> module.add_import(path)
 
       let in =
         table_info.fields
@@ -1809,10 +1659,6 @@ fn do_delete_node(
           |> module.add_import(["gleam", "dynamic", "decode"])
       }
 
-      let module =
-        retrieve_dependencies(module, table_info.fields, tables)
-        |> module.add_import(path)
-
       let in =
         table_info.fields
         |> list.find(fn(f) { f.name == "in" })
@@ -1954,10 +1800,6 @@ fn do_delete_node(
           |> module.add_import(["gleam", "dynamic", "decode"])
       }
 
-      let module =
-        retrieve_dependencies(module, table_info.fields, tables)
-        |> module.add_import(path)
-
       let out =
         table_info.fields
         |> list.find(fn(f) { f.name == "out" })
@@ -2095,10 +1937,6 @@ fn do_delete_node(
           |> module.add_import(["gleam", "dynamic", "decode"])
       }
 
-      let module =
-        retrieve_dependencies(module, table_info.fields, tables)
-        |> module.add_import(path)
-
       let parameters =
         list.filter_map(
           case where {
@@ -2172,7 +2010,8 @@ fn do_relate_node(
         module.binop.access(
           module.identifier.create(namespace),
           module_common.type_identifier(table),
-        ),
+        )
+          |> module.add_import(["#TABLE:" <> namespace]),
       )
       |> module.const_definition.public()
       |> module.const_definition.as_type(),
@@ -2214,9 +2053,9 @@ fn do_relate_node(
       |> module.const_definition.public(),
     )
 
-  let dependencies = set.from_list([path |> string.join("/")])
-  let dependencies =
-    set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
+  // let dependencies = set.from_list([])
+  // let dependencies =
+  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
 
   let in =
     table_info.fields
@@ -2300,12 +2139,12 @@ fn do_relate_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  let module =
-    dependencies
-    |> set.to_list()
-    |> list.fold(module, fn(module, dependency) {
-      module.add_import(module, string.split(dependency, "/"))
-    })
+  // let module =
+  //   dependencies
+  //   |> set.to_list()
+  //   |> list.fold(module, fn(module, dependency) {
+  //     module.add_import(module, string.split(dependency, "/"))
+  //   })
 
   let module = case parameters {
     [] -> module
@@ -2496,6 +2335,46 @@ pub fn generate_file(
       )
       |> module.const_definition.public(),
     )
+
+  // Post process imports
+  let imports =
+    module.imports
+    |> list.filter_map(fn(import_) {
+      case import_.path {
+        ["#TABLE:" <> _] -> Error(Nil)
+        _ -> Ok(import_)
+      }
+    })
+  let module =
+    module.Module(..module, imports: imports)
+    |> list.fold(module.imports, _, fn(module, import_) {
+      case import_.path {
+        ["#TABLE:" <> rest] -> {
+          let entry =
+            dict.values(tables)
+            |> list.find(fn(info) { info.path |> string.ends_with(rest) })
+          case entry {
+            Ok(table_info) ->
+              module.add_import(
+                module,
+                table_info.path
+                  |> string.remove_prefix("./src/")
+                  |> string.split("/"),
+              )
+            Error(_) -> {
+              io.println(
+                "Warning: Could not resolve table `"
+                <> rest
+                <> "`, should have been one of: "
+                <> string.join(dict.keys(tables), ", "),
+              )
+              module
+            }
+          }
+        }
+        _ -> module
+      }
+    })
 
   let content = module.to_string(module)
 

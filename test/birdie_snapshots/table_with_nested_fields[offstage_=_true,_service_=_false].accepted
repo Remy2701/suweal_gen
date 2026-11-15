@@ -10,7 +10,6 @@ import offstage_suweal/identifier as os_identifier
 import offstage_suweal/table_spec as bs_table_spec
 import pont/encode
 import pont/serialize
-import pont/value
 import suweal/identifier
 import suweal/node
 import suweal/surreal_ql

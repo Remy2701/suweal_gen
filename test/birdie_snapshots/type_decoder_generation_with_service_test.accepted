@@ -4,6 +4,7 @@ title: type_decoder_generation_with_service_test
 file: ./test/builder/type_decoder_test.gleam
 test_name: type_decoder_generation_with_service_test
 ---
+import #TABLE:other
 import gleam/option
 import offstage_suweal/identifier as os_identifier
 import offstage_suweal/point as os_point
@@ -82,11 +83,11 @@ pub fn serializer() -> serialize.Serializer(User) {
         context,
         "rc",
         os_record.typed_serializer(
-          id.serializer(),
+          other.serializer(),
           fn(data) {
             data.id
           },
-          [table_name],
+          [other.table_name],
         ),
         fn(data: User) {
           data.rc

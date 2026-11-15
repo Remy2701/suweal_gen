@@ -74,6 +74,10 @@ fn generate_to_surql_for_type(
           module.identifier.create(
             string.split(inner, ".") |> list.first() |> result.unwrap(inner),
           )
+          |> module.add_import([
+            "#TABLE:"
+            <> result.unwrap(list.first(string.split(inner, ".")), inner),
+          ])
           |> module.binop.access(module.identifier.create("to_surql")),
         ),
       )

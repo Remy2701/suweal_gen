@@ -4,6 +4,7 @@ title: type_decoder_generation_test
 file: ./test/builder/type_decoder_test.gleam
 test_name: type_decoder_generation_test
 ---
+import #TABLE:other
 import gleam/dynamic/decode
 import gleam/int
 import gleam/time/timestamp
@@ -20,11 +21,11 @@ pub fn decoder() -> decode.Decoder(User) {
   use rc <- decode.field(
     "rc",
     record.typed_decoder(
-      id.decoder(),
+      other.decoder(),
       fn(data) {
         data.id
       },
-      [table_name],
+      [other.table_name],
     ),
   )
   use id <- decode.field("id", identifier.typed_decoder([table_name]))

@@ -4,15 +4,12 @@ title: LinkedTablesViaRelationDeleteFromB[offstage = False, service = False]
 file: ./test/sample/linked_tables_via_relation_delete.gleam
 test_name: linked_tables_via_relation_delete_from_b_test
 ---
-import db/test/linked_table_a
 import db/test/linked_table_b
-import db/test/linked_table_c
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option
 import suweal/identifier
 import suweal/node
-import suweal/record
 import suweal/surreal_ql
 
 pub type QueryResult = Nil

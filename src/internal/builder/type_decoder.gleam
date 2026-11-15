@@ -169,6 +169,7 @@ fn offstage_serializer_of_identifier(inner: String) -> module.Module {
             module.identifier.create(table),
             module.identifier.create("table_name"),
           )
+          |> module.add_import(["#TABLE:" <> table])
         _ -> module.identifier.create("table_name")
       },
     ]),
@@ -188,6 +189,7 @@ fn gleam_decoder_of_identifier(inner: String) -> module.Module {
             module.identifier.create(table),
             module.identifier.create("table_name"),
           )
+          |> module.add_import(["#TABLE:" <> table])
         _ -> module.identifier.create("table_name")
       },
     ]),
@@ -210,7 +212,11 @@ fn offstage_serializer_of_record(inner: String) -> module.Module {
     module.function_call.create(module.binop.access(
       module.identifier.create(
         string.split(inner, ".") |> list.first() |> result.unwrap(inner),
-      ),
+      )
+        |> module.add_import([
+          "#TABLE:"
+          <> result.unwrap(list.first(string.split(inner, ".")), inner),
+        ]),
       module.identifier.create("serializer"),
     )),
     module.function_definition.create()
@@ -241,7 +247,11 @@ fn gleam_decoder_of_record(inner: String) -> module.Module {
     module.function_call.create(module.binop.access(
       module.identifier.create(
         string.split(inner, ".") |> list.first() |> result.unwrap(inner),
-      ),
+      )
+        |> module.add_import([
+          "#TABLE:"
+          <> result.unwrap(list.first(string.split(inner, ".")), inner),
+        ]),
       module.identifier.create("decoder"),
     )),
   )

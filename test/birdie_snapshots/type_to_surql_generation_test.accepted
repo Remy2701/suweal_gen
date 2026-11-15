@@ -4,6 +4,7 @@ title: type_to_surql_generation_test
 file: ./test/builder/type_to_surql_test.gleam
 test_name: type_to_surql_generation_test
 ---
+import #TABLE:other
 import gleam/time/calendar
 import gleam/time/timestamp
 import suweal/surreal_ql
@@ -37,7 +38,7 @@ pub fn to_surql(self: User) -> surreal_ql.SurrealQL {
           },
         ),
       ),
-      #("rc", self.rc |> record.to_surql(id.to_surql)),
+      #("rc", self.rc |> record.to_surql(other.to_surql)),
       #("obj", surreal_ql.from_value(self.obj)),
       #("nested_obj", nested_obj_to_surql(self.nested_obj)),
       #("p", point.to_surql(self.p)),

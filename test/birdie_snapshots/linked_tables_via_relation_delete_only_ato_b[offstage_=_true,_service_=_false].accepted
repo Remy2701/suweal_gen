@@ -6,13 +6,11 @@ test_name: linked_tables_via_relation_delete_only_a_to_b_with_offstage_test
 ---
 import db/test/linked_table_a
 import db/test/linked_table_b
-import db/test/linked_table_c
 import gleam/json
 import gleam/option
 import pont/serialize
 import suweal/identifier
 import suweal/node
-import suweal/record
 import suweal/surreal_ql
 
 pub type QueryResult = Nil

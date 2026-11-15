@@ -79,7 +79,7 @@ pub fn type_decoder_generation_test() {
         extractor.TableField(
           dependencies: [],
           name: "rc",
-          type_: surreal_type.Record("id"),
+          type_: surreal_type.Record("other.Other"),
           linked_enum: option.None,
           object_fields: [],
           raw_string: "__IGNORED__",
@@ -301,7 +301,7 @@ pub fn type_decoder_generation_with_offstage_test() {
         extractor.TableField(
           dependencies: [],
           name: "rc",
-          type_: surreal_type.Record("id"),
+          type_: surreal_type.Record("other.Other"),
           linked_enum: option.None,
           object_fields: [],
           raw_string: "__IGNORED__",
@@ -446,7 +446,7 @@ pub fn type_decoder_generation_with_service_test() {
         extractor.TableField(
           dependencies: [],
           name: "rc",
-          type_: surreal_type.Record("id"),
+          type_: surreal_type.Record("other.Other"),
           linked_enum: option.None,
           object_fields: [],
           raw_string: "__IGNORED__",

@@ -84,7 +84,11 @@ fn generate_record_to_json(name: String, inner: String) {
     |> module.function_call.add(module.binop.access(
       module.identifier.create(
         string.split(inner, ".") |> list.first() |> result.unwrap(inner),
-      ),
+      )
+        |> module.add_import([
+          "#TABLE:"
+          <> result.unwrap(list.first(string.split(inner, ".")), inner),
+        ]),
       module.identifier.create("to_json"),
     )),
   )

@@ -1,6 +1,8 @@
 import common
+import gleam/function
 import gleam/list
 import gleam/option
+import gleam/result
 import gleam/string
 import omcg/id_case
 import omcg/module
@@ -36,18 +38,25 @@ pub fn generate(parameters: List(common.ParameterProperty)) -> module.Module {
         entry.name,
         case entry.nested {
           option.Some(nested) ->
-            module.identifier.create(
-              case list.reverse(string.split(nested, ".")) {
-                [last, ..rest] ->
-                  string.join(
-                    list.reverse([id_case.string_to_pascal_case(last), ..rest]),
-                    ".",
-                  )
-                [] -> ""
-              },
-            )
+            case list.reverse(string.split(nested, ".")) {
+              [last, ..rest] ->
+                string.join(
+                  list.reverse([id_case.string_to_pascal_case(last), ..rest]),
+                  ".",
+                )
+                |> module.identifier.create()
+                |> module.add_import([
+                  "#TABLE:" <> result.unwrap(list.last(rest), last),
+                ])
+              [] -> module.identifier.create("")
+            }
+
           _ -> {
             surreal_type.to_gleam_module(entry.type_, entry.linked_enum)
+            |> case common.resolve_surreal_type_access_deps(entry.type_) {
+              option.Some(dep) -> module.add_import(_, ["#TABLE:" <> dep])
+              _ -> function.identity
+            }
           }
         },
       )

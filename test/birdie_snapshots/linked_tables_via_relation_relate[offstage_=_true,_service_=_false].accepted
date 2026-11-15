@@ -9,7 +9,6 @@ import db/test/linked_table_b
 import db/test/linked_table_c
 import suweal/identifier
 import suweal/node
-import suweal/record
 import suweal/surreal_ql
 
 pub type QueryResult = linked_table_c.C

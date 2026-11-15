@@ -4,6 +4,7 @@ title: query_builder_generation_with_prefix_test
 file: ./test/builder/query_builder_test.gleam
 test_name: query_builder_generation_with_prefix_test
 ---
+import #TABLE:prefix
 import gleam/option
 import gleam/time/timestamp
 import pont/serialize

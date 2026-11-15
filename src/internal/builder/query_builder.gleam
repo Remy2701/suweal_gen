@@ -37,6 +37,7 @@ fn query_content(
         module.identifier.create(prefix),
         module.identifier.create("table_name"),
       )
+      |> module.add_import(["#TABLE:" <> prefix])
     None -> module.identifier.create("table_name")
   })
   |> module.function_call.add_with_alias(
@@ -66,6 +67,7 @@ fn query_content(
             module.identifier.create(prefix),
             module.identifier.create("serializer"),
           )
+          |> module.add_import(["#TABLE:" <> prefix])
           |> module.function_call.create()
       }
     False ->

@@ -4,7 +4,6 @@ title: SimpleSelectFieldsUser[offstage = False, service = False]
 file: ./test/sample/simple_fields_select_user.gleam
 test_name: simple_select_fields_user_test
 ---
-import db/test/simple_user_table
 import gleam/dynamic/decode
 import gleam/json
 import gleam/option

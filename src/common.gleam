@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/option
+import gleam/string
 import gleam/time/calendar
 import gleam/time/timestamp
 import suweal/node
@@ -127,5 +128,25 @@ pub fn force_if_not_exists(node: node.Node) -> node.Node {
     node.DefineField(..) ->
       node.DefineField(..node, strategy: node.DefineFieldIfNotExists)
     _ -> node
+  }
+}
+
+pub fn resolve_surreal_type_access_deps(
+  type_: surreal_type.SurrealType,
+) -> option.Option(String) {
+  case type_ {
+    surreal_type.Identifier(inner) ->
+      case string.split(inner, ".") {
+        [first, _, ..] -> option.Some(first)
+        _ -> option.None
+      }
+    surreal_type.Record(inner) ->
+      case string.split(inner, ".") {
+        [first, _, ..] -> option.Some(first)
+        _ -> option.None
+      }
+    surreal_type.Option(inner) -> resolve_surreal_type_access_deps(inner)
+    surreal_type.Array(inner) -> resolve_surreal_type_access_deps(inner)
+    _ -> option.None
   }
 }

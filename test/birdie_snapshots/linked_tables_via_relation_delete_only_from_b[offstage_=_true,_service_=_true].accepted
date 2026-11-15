@@ -4,7 +4,6 @@ title: LinkedTablesViaRelationDeleteOnlyFromB[offstage = True, service = True]
 file: ./test/sample/linked_tables_via_relation_delete_only.gleam
 test_name: linked_tables_via_relation_delete_only_from_b_with_service_test
 ---
-import db/test/linked_table_a
 import db/test/linked_table_b
 import db/test/linked_table_c
 import gleam/json
@@ -12,7 +11,6 @@ import gleam/option
 import pont/serialize
 import suweal/identifier
 import suweal/node
-import suweal/record
 import suweal/surreal_ql
 import suweal_service
 import suweal_service/query

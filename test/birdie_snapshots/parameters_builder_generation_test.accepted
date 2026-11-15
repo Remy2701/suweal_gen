@@ -4,6 +4,7 @@ title: parameters_builder_generation_test
 file: ./test/builder/parameters_builder_test.gleam
 test_name: parameters_builder_generation_test
 ---
+import #TABLE:nested
 import gleam/option
 import gleam/time/calendar
 import gleam/time/timestamp

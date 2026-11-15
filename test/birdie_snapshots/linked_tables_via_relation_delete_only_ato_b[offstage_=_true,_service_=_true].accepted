@@ -12,7 +12,6 @@ import gleam/option
 import pont/serialize
 import suweal/identifier
 import suweal/node
-import suweal/record
 import suweal/surreal_ql
 import suweal_service
 import suweal_service/query
