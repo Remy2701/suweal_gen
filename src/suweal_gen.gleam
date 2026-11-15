@@ -25,7 +25,7 @@ import parser
 import shellout
 import simplifile
 
-const suweal_version = "0.5.1"
+const suweal_version = "0.6.0"
 
 type Command {
   GenCommand(config: common.Configuration)
