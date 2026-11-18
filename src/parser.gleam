@@ -244,17 +244,10 @@ fn consume_value(
     [Positioned(lexer.String(value), ..), ..rest] ->
       next(node.Value(surreal_ql.String(value)), rest)
     [
-      Positioned(lexer.Identifier(lhs), ..),
-      Positioned(lexer.DoubleColon, ..),
       Positioned(lexer.Identifier(rhs), ..),
       Positioned(lexer.LeftParenthesis, ..),
       ..rest
-    ] -> consume_function_call(option.Some(lhs), rhs, rest, next)
-    [
-      Positioned(lexer.Identifier(rhs), ..),
-      Positioned(lexer.LeftParenthesis, ..),
-      ..rest
-    ] -> consume_function_call(option.None, rhs, rest, next)
+    ] -> consume_function_call(rhs, rest, next)
     [Positioned(lexer.Identifier(value), ..), ..rest] ->
       next(node.Identifier(value), rest)
     [Positioned(lexer.LeftCurlyBracket, ..), ..rest] -> {
@@ -310,6 +303,10 @@ fn consume_value(
       use select, input <- consume_select(ParserState([]), input)
       next(select, input)
     }
+    [Positioned(lexer.Create, ..), ..rest] -> {
+      use select, input <- consume_create(rest)
+      next(select, input)
+    }
     [Positioned(lexer.LeftParenthesis, ..), ..rest] -> {
       use expression, input <- consume_expression(rest)
       use input <- consume_keyword(lexer.RightParenthesis, input)
@@ -335,6 +332,8 @@ fn access_expression_loop(
     #(ParserState, ParserResult(a)),
 ) -> #(ParserState, ParserResult(a)) {
   let is_access_allowed = !list.contains(excluded, node.Access)
+  let is_namespace_access_allowed =
+    !list.contains(excluded, node.NamespaceAccess)
   let is_relation_to_allowed = !list.contains(excluded, node.RelationTo)
   let is_relation_from_allowed = !list.contains(excluded, node.RelationFrom)
   let is_relation_to_from_allowed =
@@ -358,6 +357,11 @@ fn access_expression_loop(
     }
     [positioned.Positioned(lexer.Dot, _, _), ..rest] if is_access_allowed -> {
       Ok(#(node.Access, rest))
+    }
+    [positioned.Positioned(lexer.DoubleColon, _, _), ..rest]
+      if is_namespace_access_allowed
+    -> {
+      Ok(#(node.NamespaceAccess, rest))
     }
     [positioned.Positioned(lexer.LeftBracket, _, _), ..rest]
       if is_indexing_allowed
@@ -690,8 +694,7 @@ fn consume_function_args(
 }
 
 fn consume_function_call(
-  lhs: option.Option(String),
-  rhs: String,
+  node: String,
   input: List(Positioned(lexer.Token)),
   next: fn(node.Node, List(Positioned(lexer.Token))) ->
     #(ParserState, ParserResult(a)),
@@ -699,7 +702,7 @@ fn consume_function_call(
   use args, input <- consume_function_args([], input)
   use input <- consume_keyword(lexer.RightParenthesis, input)
 
-  next(node.FunctionCall(lhs, rhs, args), input)
+  next(node.FunctionCall(node.Identifier(node), args), input)
 }
 
 fn on_token(
@@ -928,6 +931,74 @@ fn do_define_index(
   )
 }
 
+fn do_define_access(
+  state: ParserState,
+  input: List(Positioned(lexer.Token)),
+) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  let #(strategy, input) = case input {
+    [
+      Positioned(lexer.If, ..),
+      Positioned(lexer.Not, ..),
+      Positioned(lexer.Exists, ..),
+      ..rest
+    ] -> #(node.DefineAccessIfNotExists, rest)
+    [Positioned(lexer.Overwrite, ..), ..rest] -> #(
+      node.DefineAccessOverwrite,
+      rest,
+    )
+    _ -> #(node.DefineAccessRegular, input)
+  }
+  use name, input <- consume_identifier(input)
+  use input <- consume_keyword(lexer.On, input)
+  use target, input <- consume_keyword_one_of(
+    [
+      #(lexer.Database, node.DefineAccessDatabase),
+      #(lexer.Namespace, node.DefineAccessNamespace),
+      #(lexer.Root, node.DefineAccessRoot),
+    ],
+    input,
+  )
+  use input <- consume_keyword(lexer.Type, input)
+  use input <- consume_keyword(lexer.Record, input)
+  use signup, input <- on_token(lexer.Signup, input, fn(input) {
+    use expr, input <- consume_expression(input)
+    #(state, Next(#(expr, input)))
+  })
+  use signin, input <- on_token(lexer.Signin, input, fn(input) {
+    use expr, input <- consume_expression(input)
+    #(state, Next(#(expr, input)))
+  })
+  use signup, input <-
+    fn(next) {
+      case signup {
+        option.Some(expr) -> next(option.Some(expr), input)
+        _ ->
+          on_token(
+            lexer.Signup,
+            input,
+            fn(input) {
+              use expr, input <- consume_expression(input)
+              #(state, Next(#(expr, input)))
+            },
+            next,
+          )
+      }
+    }
+
+  #(
+    add_node(
+      node.DefineAccess(
+        name:,
+        strategy:,
+        target:,
+        type_: node.DefineAccessRecord(signup:, signin:),
+      ),
+      state,
+    ),
+    Next(input),
+  )
+}
+
 fn do_select_field(
   fields: List(node.SelectField),
   input: List(Positioned(lexer.Token)),
@@ -1064,10 +1135,11 @@ fn do_update(
   #(add_node(node.Update(only:, target:, set:, where:), state), Next(input))
 }
 
-fn do_create(
-  state: ParserState,
+fn consume_create(
   input: List(Positioned(lexer.Token)),
-) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  next: fn(node.Node, List(Positioned(lexer.Token))) ->
+    #(ParserState, ParserResult(a)),
+) -> #(ParserState, ParserResult(a)) {
   let #(only, input) = case input {
     [Positioned(lexer.Only, ..), ..rest] -> #(True, rest)
     _ -> #(False, input)
@@ -1076,7 +1148,16 @@ fn do_create(
   use input <- consume_keyword(lexer.Set, input)
   use set, input <- do_update_set_field([], input)
 
-  #(add_node(node.Create(only:, target:, set:), state), Next(input))
+  next(node.Create(only:, target:, set:), input)
+}
+
+fn do_create(
+  state: ParserState,
+  input: List(Positioned(lexer.Token)),
+) -> #(ParserState, ParserResult(List(Positioned(lexer.Token)))) {
+  use node, input <- consume_create(input)
+
+  #(add_node(node, state), Next(input))
 }
 
 fn do_delete(
@@ -1146,6 +1227,8 @@ fn next(
             do_define_field(state, rest)
           [Positioned(lexer.Define, ..), Positioned(lexer.Index, ..), ..rest] ->
             do_define_index(state, rest)
+          [Positioned(lexer.Define, ..), Positioned(lexer.Access, ..), ..rest] ->
+            do_define_access(state, rest)
           [Positioned(lexer.Select, ..), ..] -> do_select(state, input)
           [Positioned(lexer.Update, ..), ..rest] -> do_update(state, rest)
           [Positioned(lexer.Create, ..), ..rest] -> do_create(state, rest)

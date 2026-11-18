@@ -58,6 +58,17 @@ pub type TableInfo {
   )
 }
 
+pub type AccessInfo {
+  AccessInfo(name: String, path: String, raw_string: String)
+}
+
+pub type ExtractorResult {
+  ExtractorResult(
+    tables: dict.Dict(String, TableInfo),
+    accesses: dict.Dict(String, AccessInfo),
+  )
+}
+
 /// Resolve the field with support for nested fields (e.g. `tags.*`). this is useful for arrays 
 /// which define constraints on the inner type and objects.
 fn resolve_nested_field(
@@ -124,7 +135,10 @@ fn resolve_nested_field(
 
 /// The (internal) state of the node processor.
 type NodeProcessorState {
-  NodeProcessorState(tables: dict.Dict(String, TableInfo))
+  NodeProcessorState(
+    tables: dict.Dict(String, TableInfo),
+    accesses: dict.Dict(String, AccessInfo),
+  )
 }
 
 //-----------------------------------------------------------------------------------------------//
@@ -139,8 +153,8 @@ fn extract_normal_table(
   as_: option.Option(node.Node),
   raw: node.Node,
 ) -> Result(NodeProcessorState, String) {
-  Ok(
-    NodeProcessorState(tables: dict.insert(
+  Ok(NodeProcessorState(
+    tables: dict.insert(
       state.tables,
       name,
       TableInfo(
@@ -165,8 +179,9 @@ fn extract_normal_table(
         delegated: as_,
         raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
       ),
-    )),
-  )
+    ),
+    accesses: state.accesses,
+  ))
 }
 
 /// Extract the table information from a DefineRelationTable node.
@@ -176,8 +191,8 @@ fn extract_relation_table(
   name: String,
   node: node.Node,
 ) -> Result(NodeProcessorState, String) {
-  Ok(
-    NodeProcessorState(tables: dict.insert(
+  Ok(NodeProcessorState(
+    tables: dict.insert(
       state.tables,
       name,
       TableInfo(
@@ -199,8 +214,9 @@ fn extract_relation_table(
         delegated: option.None,
         raw_string: node |> common.force_if_not_exists() |> node.to_string(),
       ),
-    )),
-  )
+    ),
+    accesses: state.accesses,
+  ))
 }
 
 /// Process the assert branch of a DefineField node. When the assert branch is present with a node
@@ -272,13 +288,35 @@ fn extract_field(
     }),
   )
 
-  Ok(
-    NodeProcessorState(tables: dict.insert(
+  Ok(NodeProcessorState(
+    tables: dict.insert(
       state.tables,
       table,
       TableInfo(..info, fields: new_fields, enums: enums),
-    )),
-  )
+    ),
+    accesses: state.accesses,
+  ))
+}
+
+/// Extract field information from a DefineField node.
+fn extract_access(
+  path: String,
+  state: NodeProcessorState,
+  name: String,
+  node: node.Node,
+) -> Result(NodeProcessorState, String) {
+  Ok(NodeProcessorState(
+    tables: state.tables,
+    accesses: dict.insert(
+      state.accesses,
+      name,
+      AccessInfo(
+        name: name,
+        path: string.remove_prefix(path, "./src/"),
+        raw_string: node.to_string(node),
+      ),
+    ),
+  ))
 }
 
 /// Extract the table info from a given node. This can be the creation of a new table (both normal
@@ -295,6 +333,7 @@ fn do_extract_tables(
       extract_relation_table(path, state, name, node)
     node.DefineField(name:, table:, type_:, assert_:, ..) ->
       extract_field(path, state, name, table, type_, assert_, node)
+    node.DefineAccess(name:, ..) -> extract_access(path, state, name, node)
     _ -> Ok(state)
   }
 }
@@ -303,16 +342,16 @@ fn do_extract_tables(
 pub fn extract_tables(
   path: String,
   nodes: List(node.Node),
-) -> Result(dict.Dict(String, TableInfo), String) {
+) -> Result(ExtractorResult, String) {
   use processed <- result.try(
     list.try_fold(
       nodes,
-      NodeProcessorState(tables: dict.new()),
+      NodeProcessorState(tables: dict.new(), accesses: dict.new()),
       fn(state, node) { do_extract_tables(path, state, node) },
     ),
   )
 
-  Ok(processed.tables)
+  Ok(ExtractorResult(tables: processed.tables, accesses: processed.accesses))
 }
 
 //-----------------------------------------------------------------------------------------------//
@@ -350,11 +389,17 @@ fn complete_field_dependencies(
 
 /// Complete the dependencies of the fields for each table. This will sort the dependencies in 
 /// alphabetical order and add the missing dependencies for identifiers and records. 
-pub fn complete_fields_dependencies(tables: dict.Dict(String, TableInfo)) {
-  dict.map_values(tables, fn(_, table) {
-    TableInfo(
-      ..table,
-      fields: list.map(table.fields, complete_field_dependencies(_, tables)),
-    )
-  })
+pub fn complete_fields_dependencies(result: ExtractorResult) {
+  ExtractorResult(
+    ..result,
+    tables: dict.map_values(result.tables, fn(_, table) {
+      TableInfo(
+        ..table,
+        fields: list.map(table.fields, complete_field_dependencies(
+          _,
+          result.tables,
+        )),
+      )
+    }),
+  )
 }

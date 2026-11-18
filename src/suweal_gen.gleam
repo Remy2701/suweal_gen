@@ -127,7 +127,7 @@ pub fn generate_file(
     |> result.map_error(FailedToParse(_, File(path: path, content: content))),
   )
 
-  use tables <- result.try(
+  use extracted_info <- result.try(
     extractor.extract_tables(content, ast)
     |> result.map_error(FailedToExtractTables(
       _,
@@ -136,7 +136,7 @@ pub fn generate_file(
   )
 
   use content <- result.try(
-    generator.generate_file(config, content, ast, tables)
+    generator.generate_file(config, content, ast, extracted_info.tables)
     |> result.map_error(FailedToGenerate(_, File(path: path, content: content))),
   )
 
@@ -161,7 +161,7 @@ pub fn generate_files(config: common.Configuration, files: List(File)) {
     }),
   )
 
-  use tables <- result.try(
+  use extracted_info <- result.try(
     list.zip(files, nodes)
     |> list.try_map(fn(entry) {
       extractor.extract_tables(entry.0.path, entry.1)
@@ -169,8 +169,17 @@ pub fn generate_files(config: common.Configuration, files: List(File)) {
     }),
   )
 
-  let tables =
-    list.fold(tables, dict.new(), fn(acc, table) { dict.merge(acc, table) })
+  let extracted_info =
+    list.fold(
+      extracted_info,
+      extractor.ExtractorResult(tables: dict.new(), accesses: dict.new()),
+      fn(acc, table) {
+        extractor.ExtractorResult(
+          tables: dict.merge(acc.tables, table.tables),
+          accesses: dict.merge(acc.accesses, table.accesses),
+        )
+      },
+    )
     |> extractor.complete_fields_dependencies()
     |> generator.process_delegated_table
 
@@ -179,14 +188,19 @@ pub fn generate_files(config: common.Configuration, files: List(File)) {
     |> list.try_map(fn(entry) {
       let #(file, ast) = entry
       use content <- result.try(
-        generator.generate_file(config, file.content, ast, tables)
+        generator.generate_file(
+          config,
+          file.content,
+          ast,
+          extracted_info.tables,
+        )
         |> result.map_error(FailedToGenerate(_, file)),
       )
       Ok(File(path: file.path, content: content))
     }),
   )
 
-  Ok(#(result, tables))
+  Ok(#(result, extracted_info))
 }
 
 // ---------------------------------------------------------------------------
@@ -489,7 +503,7 @@ fn write_generated_files(
 fn read_previous_fields(
   config: common.Configuration,
   version: Int,
-) -> Result(List(migration.MigrationTableField), String) {
+) -> Result(List(migration.MigrationEntity), String) {
   let path =
     config.path <> "/versions/v" <> int.to_string(version) <> "/fields.json"
 
@@ -510,20 +524,26 @@ fn read_previous_fields(
 /// the number of fields that differ from the previous version.
 fn write_migration(
   config: common.Configuration,
-  tables: dict.Dict(String, extractor.TableInfo),
+  extracted_info: extractor.ExtractorResult,
   previous: Int,
 ) -> Result(Int, String) {
   let version = previous + 1
   let fields =
-    migration.extract_fields(tables)
-    |> list.filter(fn(field) { field.raw_string != "__IGNORE__" })
+    migration.extract_entities(extracted_info)
+    |> list.filter(fn(field) {
+      case field {
+        migration.MigrationTableField(raw_string:, ..) ->
+          raw_string != "__IGNORE__"
+        migration.MigrationAccess(raw_string:, ..) -> raw_string != "__IGNORE__"
+      }
+    })
 
   use previous_fields <- result.try(case previous {
     0 -> Ok([])
     _ -> read_previous_fields(config, previous)
   })
   let migration_fields =
-    migration.find_different_fields(fields, previous_fields, tables)
+    migration.find_different_entities(fields, previous_fields, extracted_info)
 
   use _ <- result.try(create_dir_and_write(
     config.path <> "/versions/v" <> int.to_string(version) <> "/fields.json",
@@ -586,7 +606,7 @@ fn run_gen(config: common.Configuration) -> Result(Nil, String) {
       }
 
       use sources <- result.try(read_sources(files))
-      use #(generated, tables) <- result.try(
+      use #(generated, extracted_info) <- result.try(
         generate_files(config, sources)
         |> result.map_error(render_error),
       )
@@ -600,9 +620,10 @@ fn run_gen(config: common.Configuration) -> Result(Nil, String) {
 
       use _ <- result.try(case config.versioning {
         True ->
-          result.map(write_migration(config, tables, plan.previous), fn(_) {
-            Nil
-          })
+          result.map(
+            write_migration(config, extracted_info, plan.previous),
+            fn(_) { Nil },
+          )
         False -> Ok(Nil)
       })
 

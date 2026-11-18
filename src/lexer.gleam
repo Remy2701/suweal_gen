@@ -6,6 +6,7 @@ import positioned.{type Position, type Positioned, Positioned}
 
 pub type Token {
   // Keywords
+  Access
   And
   All
   AllInside
@@ -20,6 +21,7 @@ pub type Token {
   ContainsNone
   Count
   Create
+  Database
   Default
   Define
   Delete
@@ -39,6 +41,7 @@ pub type Token {
   Intersect
   Is
   Limit
+  Namespace
   NoneInside
   Not
   NotInside
@@ -51,12 +54,16 @@ pub type Token {
   Outside
   Overwrite
   Permissions
+  Record
   Relation
   Relate
+  Root
   Schemafull
   Schemaless
   Select
   Set
+  Signin
+  Signup
   Table
   Then
   Type
@@ -188,6 +195,7 @@ fn do_end_identifier(
       state |> add_token(Parameter(string.drop_start(buffer, 1)))
     ReferenceMode(lhs), _ ->
       state |> add_token(Reference(lhs, string.drop_start(buffer, 1)))
+    _, "ACCESS" -> state |> add_token(Access)
     _, "AND" -> state |> add_token(And)
     _, "ALLINSIDE" -> state |> add_token(AllInside)
     _, "ALL" -> state |> add_token(All)
@@ -202,6 +210,7 @@ fn do_end_identifier(
     _, "CONTAINSNONE" -> state |> add_token(ContainsNone)
     _, "COUNT" -> state |> add_token(Count)
     _, "CREATE" -> state |> add_token(Create)
+    _, "DATABASE" -> state |> add_token(Database)
     _, "DEFAULT" -> state |> add_token(Default)
     _, "DEFINE" -> state |> add_token(Define)
     _, "DELETE" -> state |> add_token(Delete)
@@ -222,6 +231,7 @@ fn do_end_identifier(
     _, "INTERSECT" -> state |> add_token(Intersect)
     _, "IS" -> state |> add_token(Is)
     _, "LIMIT" -> state |> add_token(Limit)
+    _, "NAMESPACE" -> state |> add_token(Namespace)
     _, "NOT" -> state |> add_token(Not)
     _, "NOTINSIDE" -> state |> add_token(NotInside)
     _, "NORMAL" -> state |> add_token(Normal)
@@ -235,12 +245,16 @@ fn do_end_identifier(
     _, "OUTSIDE" -> state |> add_token(Outside)
     _, "OVERWRITE" -> state |> add_token(Overwrite)
     _, "PERMISSIONS" -> state |> add_token(Permissions)
+    _, "RECORD" -> state |> add_token(Record)
     _, "RELATION" -> state |> add_token(Relation)
     _, "RELATE" -> state |> add_token(Relate)
+    _, "ROOT" -> state |> add_token(Root)
     _, "SCHEMAFULL" -> state |> add_token(Schemafull)
     _, "SCHEMALESS" -> state |> add_token(Schemaless)
     _, "SELECT" -> state |> add_token(Select)
     _, "SET" -> state |> add_token(Set)
+    _, "SIGNIN" -> state |> add_token(Signin)
+    _, "SIGNUP" -> state |> add_token(Signup)
     _, "TABLE" -> state |> add_token(Table)
     _, "THEN" -> state |> add_token(Then)
     _, "TYPE" -> state |> add_token(Type)

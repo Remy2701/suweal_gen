@@ -349,6 +349,49 @@ fn resolve_table_fields(
           |> list.fold(set.new(), set.union),
       ))
     }
+    node.BinaryOperator(
+      lhs: node.Identifier("array"),
+      operator: node.NamespaceAccess,
+      rhs: node.FunctionCall(node: node.Identifier("complement"), arguments:),
+    ) -> {
+      case arguments {
+        [first, ..] -> {
+          use resolved <- result.try(resolve_table_fields(
+            tables,
+            current,
+            first,
+          ))
+
+          Ok(ResolveTableFieldsResult(
+            field: extractor.TableField(
+              ..resolved.field,
+              name: node.to_string(node),
+            ),
+            dependencies: resolved.dependencies,
+          ))
+        }
+        _ -> {
+          io.println(
+            "Warning: calling array::complement with no arguments: "
+            <> node.to_string(node),
+          )
+          Error(Nil)
+        }
+      }
+    }
+    node.FunctionCall(node: node.Identifier("count"), ..) -> {
+      Ok(ResolveTableFieldsResult(
+        field: extractor.TableField(
+          dependencies: [],
+          name: "count",
+          type_: surreal_type.Int,
+          linked_enum: option.None,
+          object_fields: [],
+          raw_string: "__IGNORE__",
+        ),
+        dependencies: set.new(),
+      ))
+    }
     node.BinaryOperator(lhs:, operator:, rhs:) -> {
       use resolved_lhs <- result.try(
         resolve_table_fields(tables, current, lhs)
@@ -539,56 +582,6 @@ fn resolve_table_fields(
                 module.module_node_to_string(surreal_type.to_gleam_type(t))
               }),
             ),
-          )
-          Error(Nil)
-        }
-      }
-    }
-    node.FunctionCall(lhs:, rhs:, arguments:) -> {
-      case lhs, rhs {
-        option.None, "count" -> {
-          Ok(ResolveTableFieldsResult(
-            field: extractor.TableField(
-              dependencies: [],
-              name: "count",
-              type_: surreal_type.Int,
-              linked_enum: option.None,
-              object_fields: [],
-              raw_string: "__IGNORE__",
-            ),
-            dependencies: set.new(),
-          ))
-        }
-        option.Some("array"), "complement" -> {
-          case arguments {
-            [first, ..] -> {
-              use resolved <- result.try(resolve_table_fields(
-                tables,
-                current,
-                first,
-              ))
-
-              Ok(ResolveTableFieldsResult(
-                field: extractor.TableField(
-                  ..resolved.field,
-                  name: node.to_string(node),
-                ),
-                dependencies: resolved.dependencies,
-              ))
-            }
-            _ -> {
-              io.println(
-                "Warning: calling array::complement with no arguments: "
-                <> node.to_string(node),
-              )
-              Error(Nil)
-            }
-          }
-        }
-        _, _ -> {
-          io.println(
-            "Warning: unsupported function call for field resolution: "
-            <> node.to_string(node),
           )
           Error(Nil)
         }
@@ -1008,20 +1001,6 @@ fn do_select_node(
           )
       }
 
-      // let dependencies =
-      //   set.from_list([])
-      //   |> set.union(
-      //     list.flat_map(table_info.fields, fn(f) { f.dependencies })
-      //     |> set.from_list,
-      //   )
-
-      // let module =
-      //   dependencies
-      //   |> set.to_list()
-      //   |> list.fold(module, fn(module, dependency) {
-      //     module.add_import(module, string.split(dependency, "/"))
-      //   })
-
       module
     }
     _ -> {
@@ -1088,21 +1067,6 @@ fn do_select_node(
           fields,
           "",
         ))
-
-      // let dependencies =
-      //   set.from_list([])
-      //   |> set.union(
-      //     list.flat_map(table_info.fields, fn(f) { f.dependencies })
-      //     |> set.from_list,
-      //   )
-      //   |> set.union(retrieve_dependencies_(fields, tables))
-
-      // let module =
-      //   dependencies
-      //   |> set.to_list()
-      //   |> list.fold(module, fn(module, dependency) {
-      //     module.add_import(module, string.split(dependency, "/"))
-      //   })
 
       module
     }
@@ -1227,17 +1191,6 @@ fn do_update_node(
       |> module.const_definition.public(),
     )
 
-  // let dependencies = set.from_list([])
-  // let dependencies =
-  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
-
-  // let module =
-  //   dependencies
-  //   |> set.to_list()
-  //   |> list.fold(module, fn(module, dependency) {
-  //     module.add_import(module, string.split(dependency, "/"))
-  //   })
-
   let parameters =
     list.filter_map(
       case where {
@@ -1352,17 +1305,6 @@ fn do_create_node(
       )
       |> module.const_definition.public(),
     )
-
-  // let dependencies = set.from_list([])
-  // let dependencies =
-  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
-
-  // let module =
-  //   dependencies
-  //   |> set.to_list()
-  //   |> list.fold(module, fn(module, dependency) {
-  //     module.add_import(module, string.split(dependency, "/"))
-  //   })
 
   let parameters =
     list.filter_map(
@@ -2053,10 +1995,6 @@ fn do_relate_node(
       |> module.const_definition.public(),
     )
 
-  // let dependencies = set.from_list([])
-  // let dependencies =
-  //   set.union(retrieve_dependencies_(table_info.fields, tables), dependencies)
-
   let in =
     table_info.fields
     |> list.find(fn(f) { f.name == "in" })
@@ -2139,13 +2077,6 @@ fn do_relate_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  // let module =
-  //   dependencies
-  //   |> set.to_list()
-  //   |> list.fold(module, fn(module, dependency) {
-  //     module.add_import(module, string.split(dependency, "/"))
-  //   })
-
   let module = case parameters {
     [] -> module
     _ -> module.root.add(module, parameters_builder.generate(parameters))
@@ -2205,6 +2136,15 @@ fn do_node(
 }
 
 pub fn process_delegated_table(
+  result: extractor.ExtractorResult,
+) -> extractor.ExtractorResult {
+  extractor.ExtractorResult(
+    ..result,
+    tables: process_delegated_table_internal(result.tables),
+  )
+}
+
+fn process_delegated_table_internal(
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> dict.Dict(String, extractor.TableInfo) {
   tables
