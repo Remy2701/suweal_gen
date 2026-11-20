@@ -8,6 +8,7 @@ pub type Token {
   // Keywords
   Access
   And
+  Algorithm
   All
   AllInside
   AnyInside
@@ -40,6 +41,8 @@ pub type Token {
   Inside
   Intersect
   Is
+  Jwt
+  Key
   Limit
   Namespace
   NoneInside
@@ -70,6 +73,7 @@ pub type Token {
   Unique
   Update
   Value
+  With
   Where
 
   // Keywords as value
@@ -197,6 +201,7 @@ fn do_end_identifier(
       state |> add_token(Reference(lhs, string.drop_start(buffer, 1)))
     _, "ACCESS" -> state |> add_token(Access)
     _, "AND" -> state |> add_token(And)
+    _, "ALGORITHM" -> state |> add_token(Algorithm)
     _, "ALLINSIDE" -> state |> add_token(AllInside)
     _, "ALL" -> state |> add_token(All)
     _, "ANYINSIDE" -> state |> add_token(AnyInside)
@@ -230,6 +235,8 @@ fn do_end_identifier(
     _, "INSIDE" -> state |> add_token(Inside)
     _, "INTERSECT" -> state |> add_token(Intersect)
     _, "IS" -> state |> add_token(Is)
+    _, "JWT" -> state |> add_token(Jwt)
+    _, "KEY" -> state |> add_token(Key)
     _, "LIMIT" -> state |> add_token(Limit)
     _, "NAMESPACE" -> state |> add_token(Namespace)
     _, "NOT" -> state |> add_token(Not)
@@ -261,6 +268,7 @@ fn do_end_identifier(
     _, "UNIQUE" -> state |> add_token(Unique)
     _, "UPDATE" -> state |> add_token(Update)
     _, "VALUE" -> state |> add_token(Value)
+    _, "WITH" -> state |> add_token(With)
     _, "WHERE" -> state |> add_token(Where)
     _, _ -> state |> add_token(Identifier(buffer))
   }

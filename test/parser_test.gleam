@@ -538,6 +538,169 @@ pub fn parse_define_access_test() {
               ]),
             ),
           ),
+          jwt_config: option.None,
+        ),
+      ),
+    ]
+}
+
+pub fn parse_define_access_with_config_test() {
+  let str =
+    "DEFINE ACCESS user ON DATABASE TYPE RECORD "
+    <> "SIGNUP (CREATE user SET email = $email, password = crypto::argon2::generate($password)) "
+    <> "SIGNIN (SELECT * FROM user WHERE email = $email AND crypto::argon2::compare(password, $password)) "
+    <> "WITH JWT ALGORITHM \"HS256\" KEY \"secret\""
+  let assert Ok(tokens) = lexer.tokenize("./src/db/test", str)
+    as "Failed to tokenize input"
+
+  assert positioned.unpositioned(tokens)
+    == [
+      lexer.Define,
+      lexer.Access,
+      lexer.Identifier("user"),
+      lexer.On,
+      lexer.Database,
+      lexer.Type,
+      lexer.Record,
+      lexer.Signup,
+      lexer.LeftParenthesis,
+      lexer.Create,
+      lexer.Identifier("user"),
+      lexer.Set,
+      lexer.Identifier("email"),
+      lexer.Equal,
+      lexer.Parameter("email"),
+      lexer.Comma,
+      lexer.Identifier("password"),
+      lexer.Equal,
+      lexer.Identifier("crypto"),
+      lexer.DoubleColon,
+      lexer.Identifier("argon2"),
+      lexer.DoubleColon,
+      lexer.Identifier("generate"),
+      lexer.LeftParenthesis,
+      lexer.Parameter("password"),
+      lexer.RightParenthesis,
+      lexer.RightParenthesis,
+      lexer.Signin,
+      lexer.LeftParenthesis,
+      lexer.Select,
+      lexer.Asterisk,
+      lexer.From,
+      lexer.Identifier("user"),
+      lexer.Where,
+      lexer.Identifier("email"),
+      lexer.Equal,
+      lexer.Parameter("email"),
+      lexer.And,
+      lexer.Identifier("crypto"),
+      lexer.DoubleColon,
+      lexer.Identifier("argon2"),
+      lexer.DoubleColon,
+      lexer.Identifier("compare"),
+      lexer.LeftParenthesis,
+      lexer.Identifier("password"),
+      lexer.Comma,
+      lexer.Parameter("password"),
+      lexer.RightParenthesis,
+      lexer.RightParenthesis,
+      lexer.With,
+      lexer.Jwt,
+      lexer.Algorithm,
+      lexer.String("HS256"),
+      lexer.Key,
+      lexer.String("secret"),
+    ]
+
+  let ast = case parser.parse(tokens) {
+    Ok(ast) -> ast
+    Error(e) -> {
+      io.println(
+        "Failed to parse input:\n" <> parser.render_error(e, str) <> "\n",
+      )
+      panic as "Failed to parse input"
+    }
+  }
+
+  assert ast
+    == [
+      node.DefineAccess(
+        name: "user",
+        strategy: node.DefineAccessRegular,
+        target: node.DefineAccessDatabase,
+        type_: node.DefineAccessRecord(
+          signin: option.Some(
+            node.WrappedNode(node.Select(
+              fields: [
+                node.SelectField(
+                  field: node.All,
+                  alias: option.None,
+                  value: False,
+                ),
+              ],
+              only: False,
+              table: "user",
+              where: option.Some(node.BinaryOperator(
+                lhs: node.BinaryOperator(
+                  lhs: node.Identifier("email"),
+                  operator: node.Equal,
+                  rhs: node.Parameter("email"),
+                ),
+                operator: node.And,
+                rhs: node.BinaryOperator(
+                  lhs: node.BinaryOperator(
+                    lhs: node.Identifier("crypto"),
+                    operator: node.NamespaceAccess,
+                    rhs: node.Identifier("argon2"),
+                  ),
+                  operator: node.NamespaceAccess,
+                  rhs: node.FunctionCall(
+                    node: node.Identifier("compare"),
+                    arguments: [
+                      node.Identifier("password"),
+                      node.Parameter("password"),
+                    ],
+                  ),
+                ),
+              )),
+              order: option.None,
+              limit: option.None,
+              group_all: False,
+            )),
+          ),
+          signup: option.Some(
+            node.WrappedNode(
+              node.Create(only: False, target: "user", set: [
+                node.BinaryOperator(
+                  lhs: node.Identifier("email"),
+                  operator: node.Equal,
+                  rhs: node.Parameter("email"),
+                ),
+                node.BinaryOperator(
+                  lhs: node.Identifier("password"),
+                  operator: node.Equal,
+                  rhs: node.BinaryOperator(
+                    lhs: node.BinaryOperator(
+                      lhs: node.Identifier("crypto"),
+                      operator: node.NamespaceAccess,
+                      rhs: node.Identifier("argon2"),
+                    ),
+                    operator: node.NamespaceAccess,
+                    rhs: node.FunctionCall(
+                      node: node.Identifier("generate"),
+                      arguments: [
+                        node.Parameter("password"),
+                      ],
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          jwt_config: option.Some(node.JWTConfiguration(
+            algorithm: "HS256",
+            key: "secret",
+          )),
         ),
       ),
     ]
@@ -689,6 +852,7 @@ pub fn parse_define_access_swapped_test() {
               ]),
             ),
           ),
+          jwt_config: option.None,
         ),
       ),
     ]

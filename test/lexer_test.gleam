@@ -31,6 +31,19 @@ pub fn lexer_token_lowercase_and_test() {
     ]
 }
 
+pub fn lexer_token_algorithm_test() {
+  let file = "_test_file"
+  let assert Ok(tokens) = lexer.tokenize(file, "ALGORITHM")
+  assert tokens
+    == [
+      positioned.Positioned(
+        lexer.Algorithm,
+        positioned.Position(file, 0, 1, 1),
+        positioned.Position(file, 9, 1, 10),
+      ),
+    ]
+}
+
 pub fn lexer_token_all_inside_test() {
   let file = "_test_file"
   let assert Ok(tokens) = lexer.tokenize(file, "ALLINSIDE")
