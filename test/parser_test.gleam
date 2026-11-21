@@ -698,8 +698,8 @@ pub fn parse_define_access_with_config_test() {
             ),
           ),
           jwt_config: option.Some(node.JWTConfiguration(
-            algorithm: "HS256",
-            key: "secret",
+            algorithm: node.value.string("HS256"),
+            key: node.value.string("secret"),
           )),
         ),
       ),

@@ -53,21 +53,6 @@ fn consume_identifier(
   }
 }
 
-fn consume_string(
-  input: List(Positioned(lexer.Token)),
-  next: fn(String, List(Positioned(lexer.Token))) ->
-    #(ParserState, ParserResult(a)),
-) -> #(ParserState, ParserResult(a)) {
-  case input {
-    [Positioned(lexer.String(name), ..), ..rest] -> next(name, rest)
-    [token, ..] -> #(
-      ParserState([]),
-      Failure(UnexpectedToken([Token(lexer.String(""))], token)),
-    )
-    [] -> #(ParserState([]), Failure(UnexpectedEOF([Token(lexer.String(""))])))
-  }
-}
-
 fn consume_object(
   input: List(Positioned(lexer.Token)),
   fields: List(#(String, node.Node)),
@@ -1002,9 +987,9 @@ fn do_define_access(
   use jwt_config, input <- on_token(lexer.With, input, fn(input) {
     use input <- consume_keyword(lexer.Jwt, input)
     use input <- consume_keyword(lexer.Algorithm, input)
-    use algorithm, input <- consume_string(input)
+    use algorithm, input <- consume_expression(input)
     use input <- consume_keyword(lexer.Key, input)
-    use key, input <- consume_string(input)
+    use key, input <- consume_expression(input)
     #(state, Next(#(node.JWTConfiguration(algorithm:, key:), input)))
   })
 
