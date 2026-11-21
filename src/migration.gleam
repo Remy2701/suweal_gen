@@ -286,6 +286,21 @@ pub fn generate_migrations(
       )
         |> module.add_import(["suweal"]),
     )
+    |> module.function_definition.add_parameter(
+      "parameters",
+      module.identifier.create("List")
+        |> module.function_call.create()
+        |> module.function_call.add(
+          module.literal.tuple([
+            module.types.string(),
+            module.binop.access(
+              module.identifier.create("surreal_ql"),
+              module.identifier.create("SurrealQL"),
+            ),
+          ])
+          |> module.add_import(["suweal", "surreal_ql"]),
+        ),
+    )
     |> module.function_definition.add(
       module.function_call.create(
         module.binop.access(
@@ -327,7 +342,7 @@ pub fn generate_migrations(
         })
         |> option.unwrap(module.literal.string("")),
       )
-      |> module.function_call.add(module.literal.list([]))
+      |> module.function_call.add(module.identifier.create("parameters"))
       |> module.function_call.add(
         module.binop.access(
           module.identifier.create("decode"),
