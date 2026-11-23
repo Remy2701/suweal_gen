@@ -172,11 +172,16 @@ pub fn generate_files(config: common.Configuration, files: List(File)) {
   let extracted_info =
     list.fold(
       extracted_info,
-      extractor.ExtractorResult(tables: dict.new(), accesses: dict.new()),
+      extractor.ExtractorResult(
+        tables: dict.new(),
+        accesses: dict.new(),
+        indexes: dict.new(),
+      ),
       fn(acc, table) {
         extractor.ExtractorResult(
           tables: dict.merge(acc.tables, table.tables),
           accesses: dict.merge(acc.accesses, table.accesses),
+          indexes: dict.merge(acc.indexes, table.indexes),
         )
       },
     )
@@ -535,6 +540,8 @@ fn write_migration(
         migration.MigrationTableField(raw_string:, ..) ->
           raw_string != "__IGNORE__"
         migration.MigrationAccess(raw_string:, ..) -> raw_string != "__IGNORE__"
+        migration.MigrationIndex(raw_string:, ..) -> raw_string != "__IGNORE__"
+        migration.MigrationTable(raw_string:, ..) -> raw_string != "__IGNORE__"
       }
     })
 
@@ -543,7 +550,7 @@ fn write_migration(
     _ -> read_previous_fields(config, previous)
   })
   let migration_fields =
-    migration.find_different_entities(fields, previous_fields, extracted_info)
+    migration.find_different_entities(fields, previous_fields)
 
   use _ <- result.try(create_dir_and_write(
     config.path <> "/versions/v" <> int.to_string(version) <> "/fields.json",

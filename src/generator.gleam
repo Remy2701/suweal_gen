@@ -2230,10 +2230,11 @@ fn process_delegated_table_internal(
           Ok(extractor.TableInfo(
             name: info.name,
             path: info.path,
+            type_: info.type_,
             fields: list.append(info.fields, table_fields),
             enums: info.enums,
             delegated: option.None,
-            raw_string: "__IGNORE__",
+            raw_string: info.raw_string,
           ))
         }
         |> result.unwrap(info)

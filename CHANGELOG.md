@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.9.0
+Released on November 23rd 2026
+
+### New features
+- Added support for indexes and view tables in migrations
+
 ## Version 0.8.0
 Released on November 21st 2026
 

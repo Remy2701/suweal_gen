@@ -5,13 +5,13 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option
-import gleam/result
 import gleam/string
 import omcg/module
 import suweal/node
 import suweal/surreal_type
 
 pub type MigrationEntity {
+  MigrationTable(name: String, type_: node.TableType, raw_string: String)
   MigrationTableField(
     name: String,
     table: String,
@@ -19,6 +19,7 @@ pub type MigrationEntity {
     raw_string: String,
   )
   MigrationAccess(name: String, raw_string: String)
+  MigrationIndex(name: String, raw_string: String)
 }
 
 fn surreal_type_to_json(type_: surreal_type.SurrealType) -> json.Json {
@@ -99,6 +100,22 @@ pub fn surreal_type_decoder() -> decode.Decoder(surreal_type.SurrealType) {
 
 pub fn migration_table_field_to_json(field: MigrationEntity) -> json.Json {
   case field {
+    MigrationTable(..) -> {
+      json.object([
+        #("kind", json.string("table")),
+        #("type", case field.type_ {
+          node.NormalTable -> json.object([#("kind", json.string("normal"))])
+          node.RelationTable(in:, out:) ->
+            json.object([
+              #("kind", json.string("relation")),
+              #("in", json.string(in)),
+              #("out", json.string(out)),
+            ])
+        }),
+        #("name", json.string(field.name)),
+        #("raw_string", json.string(field.raw_string)),
+      ])
+    }
     MigrationTableField(..) -> {
       json.object([
         #("kind", json.string("table_field")),
@@ -115,12 +132,39 @@ pub fn migration_table_field_to_json(field: MigrationEntity) -> json.Json {
         #("raw_string", json.string(field.raw_string)),
       ])
     }
+    MigrationIndex(..) -> {
+      json.object([
+        #("kind", json.string("index")),
+        #("name", json.string(field.name)),
+        #("raw_string", json.string(field.raw_string)),
+      ])
+    }
   }
 }
 
 pub fn migration_table_field_decoder() -> decode.Decoder(MigrationEntity) {
   use type_ <- decode.field("kind", decode.string)
   case type_ {
+    "table" -> {
+      use name <- decode.field("name", decode.string)
+      use type_ <- decode.then({
+        use internal <- decode.field("kind", decode.string)
+        case internal {
+          "relation" -> {
+            use in <- decode.field("in", decode.string)
+            use out <- decode.field("out", decode.string)
+            decode.success(node.RelationTable(in: in, out: out))
+          }
+          "normal" -> {
+            decode.success(node.NormalTable)
+          }
+          _ -> decode.failure(node.NormalTable, "Invalid type")
+        }
+      })
+      use raw_string <- decode.field("raw_string", decode.string)
+
+      decode.success(MigrationTable(name:, type_:, raw_string:))
+    }
     "table_field" -> {
       use name <- decode.field("name", decode.string)
       use table <- decode.field("table", decode.string)
@@ -135,17 +179,15 @@ pub fn migration_table_field_decoder() -> decode.Decoder(MigrationEntity) {
 
       decode.success(MigrationAccess(name, raw_string))
     }
-    _ ->
-      decode.failure(MigrationAccess(name: "", raw_string: ""), "Invalid type")
-  }
-}
+    "index" -> {
+      use name <- decode.field("name", decode.string)
+      use raw_string <- decode.field("raw_string", decode.string)
 
-pub type MigrationTable {
-  MigrationTable(
-    name: String,
-    fields: List(MigrationEntity),
-    type_: node.TableType,
-  )
+      decode.success(MigrationIndex(name, raw_string))
+    }
+    _ ->
+      decode.failure(MigrationIndex(name: "", raw_string: ""), "Invalid type")
+  }
 }
 
 fn extract_object_field(
@@ -184,6 +226,26 @@ pub fn extract_entities(extracted_info: extractor.ExtractorResult) {
       MigrationAccess(name: access.name, raw_string: access.raw_string)
     }),
   )
+  |> list.append(
+    extracted_info.indexes
+    |> dict.to_list()
+    |> list.map(fn(entry) {
+      let #(_, access) = entry
+      MigrationIndex(name: access.name, raw_string: access.raw_string)
+    }),
+  )
+  |> list.append(
+    extracted_info.tables
+    |> dict.to_list()
+    |> list.map(fn(entry) {
+      let #(_, table) = entry
+      MigrationTable(
+        name: table.name.value,
+        type_: table.type_,
+        raw_string: table.raw_string,
+      )
+    }),
+  )
 }
 
 pub type FieldDifference {
@@ -196,14 +258,28 @@ pub type FieldDifference {
 pub fn find_different_entities(
   current: List(MigrationEntity),
   previous: List(MigrationEntity),
-  extracted_info: extractor.ExtractorResult,
 ) {
   let fields =
     current
+    |> list.sort(fn(a, b) {
+      let priority = fn(field) {
+        case field {
+          MigrationTable(type_: node.NormalTable, ..) -> 0
+          MigrationTable(type_: node.RelationTable(..), ..) -> 1
+          MigrationTableField(..) -> 2
+          MigrationAccess(..) -> 3
+          MigrationIndex(..) -> 4
+        }
+      }
+
+      int.compare(priority(a), priority(b))
+    })
     |> list.filter(fn(field) {
       let raw_string = case field {
         MigrationTableField(raw_string:, ..) -> raw_string
+        MigrationTable(raw_string:, ..) -> raw_string
         MigrationAccess(raw_string:, ..) -> raw_string
+        MigrationIndex(raw_string:, ..) -> raw_string
       }
 
       raw_string != "__IGNORE__"
@@ -233,38 +309,40 @@ pub fn find_different_entities(
       }
     })
 
-  let tables =
-    fields
-    |> list.filter_map(fn(result) {
-      case result {
-        FieldAdded(MigrationTableField(table:, ..)) -> {
-          let fields =
-            list.filter(previous, fn(prev) {
-              case prev {
-                MigrationTableField(table: prev_table, ..) ->
-                  prev_table == table
-                _ -> False
-              }
-            })
-          case fields {
-            [] -> Ok(table)
-            _ -> Error(Nil)
-          }
-        }
-        _ -> Error(Nil)
-      }
-    })
-    |> list.unique()
-    |> list.filter_map(fn(table) {
-      use table <- result.try(dict.get(extracted_info.tables, table))
-      case table.raw_string {
-        "__IGNORE__" -> Error(Nil)
-        _ -> Ok(TableAdded(table.raw_string))
-      }
-    })
+  // let tables =
+  //   fields
+  //   |> list.filter_map(fn(result) {
+  //     case result {
+  //       FieldAdded(MigrationTableField(table:, ..)) -> {
+  //         let fields =
+  //           list.filter(previous, fn(prev) {
+  //             case prev {
+  //               MigrationTableField(table: prev_table, ..) ->
+  //                 prev_table == table
+  //               _ -> False
+  //             }
+  //           })
+  //         case fields {
+  //           [] -> Ok(table)
+  //           _ -> Error(Nil)
+  //         }
+  //       }
+  //       _ -> Error(Nil)
+  //     }
+  //   })
+  //   |> list.unique()
+  //   |> list.filter_map(fn(table) {
+  //     use table <- result.try(dict.get(extracted_info.tables, table))
+  //     case table.raw_string {
+  //       "__IGNORE__" -> Error(Nil)
+  //       _ -> Ok(TableAdded(table.raw_string))
+  //     }
+  //   })
 
-  tables
-  |> list.append(fields)
+  // tables
+  // |> 
+  // list.append(fields)
+  fields
 }
 
 pub fn generate_migrations(
@@ -314,20 +392,26 @@ pub fn generate_migrations(
         list.fold(fields, option.None, fn(acc, field) {
           let rhs =
             case field {
+              FieldAdded(MigrationTable(raw_string:, ..)) -> raw_string
               FieldAdded(MigrationTableField(raw_string:, ..)) -> raw_string
               FieldAdded(MigrationAccess(raw_string:, ..)) -> raw_string
+              FieldAdded(MigrationIndex(raw_string:, ..)) -> raw_string
               TableAdded(table) -> table
               FieldRemoved(_) -> "-- Remove unsupported"
               FieldChanged(lhs, rhs) ->
                 "-- Change unsupported "
                 <> case lhs {
                   MigrationTableField(raw_string:, ..) -> raw_string
+                  MigrationTable(raw_string:, ..) -> raw_string
                   MigrationAccess(raw_string:, ..) -> raw_string
+                  MigrationIndex(raw_string:, ..) -> raw_string
                 }
                 <> " ==INTO=> "
                 <> case rhs {
                   MigrationTableField(raw_string:, ..) -> raw_string
+                  MigrationTable(raw_string:, ..) -> raw_string
                   MigrationAccess(raw_string:, ..) -> raw_string
+                  MigrationIndex(raw_string:, ..) -> raw_string
                 }
             }
             |> string.replace("\"", "\\\"")

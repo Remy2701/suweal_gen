@@ -51,6 +51,7 @@ pub type TableInfo {
   TableInfo(
     name: id_case.IdentifierCase,
     path: String,
+    type_: node.TableType,
     fields: List(TableField),
     enums: List(#(String, List(String))),
     delegated: option.Option(node.Node),
@@ -62,10 +63,15 @@ pub type AccessInfo {
   AccessInfo(name: String, path: String, raw_string: String)
 }
 
+pub type IndexInfo {
+  IndexInfo(name: String, path: String, raw_string: String)
+}
+
 pub type ExtractorResult {
   ExtractorResult(
     tables: dict.Dict(String, TableInfo),
     accesses: dict.Dict(String, AccessInfo),
+    indexes: dict.Dict(String, IndexInfo),
   )
 }
 
@@ -137,7 +143,9 @@ fn resolve_nested_field(
 type NodeProcessorState {
   NodeProcessorState(
     tables: dict.Dict(String, TableInfo),
+    view_tables: dict.Dict(String, TableInfo),
     accesses: dict.Dict(String, AccessInfo),
+    indexes: dict.Dict(String, IndexInfo),
   )
 }
 
@@ -153,15 +161,62 @@ fn extract_normal_table(
   as_: option.Option(node.Node),
   raw: node.Node,
 ) -> Result(NodeProcessorState, String) {
-  Ok(NodeProcessorState(
-    tables: dict.insert(
-      state.tables,
-      name,
-      TableInfo(
-        name: id_case.identify_case(name),
-        path: path,
-        fields: case as_ {
-          option.None -> [
+  Ok(
+    NodeProcessorState(
+      ..state,
+      tables: dict.insert(
+        state.tables,
+        name,
+        TableInfo(
+          name: id_case.identify_case(name),
+          path: path,
+          type_: node.NormalTable,
+          fields: case as_ {
+            option.None -> [
+              TableField(
+                dependencies: [
+                  string.remove_prefix(path, "./src/"),
+                ],
+                name: "id",
+                type_: surreal_type.Identifier(id_case.string_to_pascal_case(
+                  name,
+                )),
+                linked_enum: option.None,
+                object_fields: [],
+                raw_string: "__IGNORE__",
+              ),
+            ]
+            _ -> []
+          },
+          enums: [],
+          delegated: as_,
+          raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
+        ),
+      ),
+    ),
+  )
+}
+
+/// Extract the table information from a DefineRelationTable node.
+fn extract_relation_table(
+  path: String,
+  in: String,
+  out: String,
+  state: NodeProcessorState,
+  name: String,
+  node: node.Node,
+) -> Result(NodeProcessorState, String) {
+  Ok(
+    NodeProcessorState(
+      ..state,
+      tables: dict.insert(
+        state.tables,
+        name,
+        TableInfo(
+          name: id_case.identify_case(name),
+          type_: node.RelationTable(in: in, out: out),
+          path: path,
+          fields: [
             TableField(
               dependencies: [
                 string.remove_prefix(path, "./src/"),
@@ -172,51 +227,14 @@ fn extract_normal_table(
               object_fields: [],
               raw_string: "__IGNORE__",
             ),
-          ]
-          _ -> []
-        },
-        enums: [],
-        delegated: as_,
-        raw_string: raw |> common.force_if_not_exists() |> node.to_string(),
+          ],
+          enums: [],
+          delegated: option.None,
+          raw_string: node |> common.force_if_not_exists() |> node.to_string(),
+        ),
       ),
     ),
-    accesses: state.accesses,
-  ))
-}
-
-/// Extract the table information from a DefineRelationTable node.
-fn extract_relation_table(
-  path: String,
-  state: NodeProcessorState,
-  name: String,
-  node: node.Node,
-) -> Result(NodeProcessorState, String) {
-  Ok(NodeProcessorState(
-    tables: dict.insert(
-      state.tables,
-      name,
-      TableInfo(
-        name: id_case.identify_case(name),
-        path: path,
-        fields: [
-          TableField(
-            dependencies: [
-              string.remove_prefix(path, "./src/"),
-            ],
-            name: "id",
-            type_: surreal_type.Identifier(id_case.string_to_pascal_case(name)),
-            linked_enum: option.None,
-            object_fields: [],
-            raw_string: "__IGNORE__",
-          ),
-        ],
-        enums: [],
-        delegated: option.None,
-        raw_string: node |> common.force_if_not_exists() |> node.to_string(),
-      ),
-    ),
-    accesses: state.accesses,
-  ))
+  )
 }
 
 /// Process the assert branch of a DefineField node. When the assert branch is present with a node
@@ -288,14 +306,16 @@ fn extract_field(
     }),
   )
 
-  Ok(NodeProcessorState(
-    tables: dict.insert(
-      state.tables,
-      table,
-      TableInfo(..info, fields: new_fields, enums: enums),
+  Ok(
+    NodeProcessorState(
+      ..state,
+      tables: dict.insert(
+        state.tables,
+        table,
+        TableInfo(..info, fields: new_fields, enums: enums),
+      ),
     ),
-    accesses: state.accesses,
-  ))
+  )
 }
 
 /// Extract field information from a DefineField node.
@@ -305,18 +325,43 @@ fn extract_access(
   name: String,
   node: node.Node,
 ) -> Result(NodeProcessorState, String) {
-  Ok(NodeProcessorState(
-    tables: state.tables,
-    accesses: dict.insert(
-      state.accesses,
-      name,
-      AccessInfo(
-        name: name,
-        path: string.remove_prefix(path, "./src/"),
-        raw_string: node.to_string(node),
+  Ok(
+    NodeProcessorState(
+      ..state,
+      accesses: dict.insert(
+        state.accesses,
+        name,
+        AccessInfo(
+          name: name,
+          path: string.remove_prefix(path, "./src/"),
+          raw_string: node.to_string(node),
+        ),
       ),
     ),
-  ))
+  )
+}
+
+/// Extract field information from a DefineField node.
+fn extract_index(
+  path: String,
+  state: NodeProcessorState,
+  name: String,
+  node: node.Node,
+) -> Result(NodeProcessorState, String) {
+  Ok(
+    NodeProcessorState(
+      ..state,
+      indexes: dict.insert(
+        state.indexes,
+        name,
+        IndexInfo(
+          name: name,
+          path: string.remove_prefix(path, "./src/"),
+          raw_string: node.to_string(node),
+        ),
+      ),
+    ),
+  )
 }
 
 /// Extract the table info from a given node. This can be the creation of a new table (both normal
@@ -329,11 +374,12 @@ fn do_extract_tables(
   case node {
     node.DefineTable(name:, type_: node.NormalTable, as_:, ..) ->
       extract_normal_table(path, state, name, as_, node)
-    node.DefineTable(name:, type_: node.RelationTable(..), ..) ->
-      extract_relation_table(path, state, name, node)
+    node.DefineTable(name:, type_: node.RelationTable(in:, out:), ..) ->
+      extract_relation_table(path, in, out, state, name, node)
     node.DefineField(name:, table:, type_:, assert_:, ..) ->
       extract_field(path, state, name, table, type_, assert_, node)
     node.DefineAccess(name:, ..) -> extract_access(path, state, name, node)
+    node.DefineIndex(name:, ..) -> extract_index(path, state, name, node)
     _ -> Ok(state)
   }
 }
@@ -346,12 +392,21 @@ pub fn extract_tables(
   use processed <- result.try(
     list.try_fold(
       nodes,
-      NodeProcessorState(tables: dict.new(), accesses: dict.new()),
+      NodeProcessorState(
+        tables: dict.new(),
+        view_tables: dict.new(),
+        accesses: dict.new(),
+        indexes: dict.new(),
+      ),
       fn(state, node) { do_extract_tables(path, state, node) },
     ),
   )
 
-  Ok(ExtractorResult(tables: processed.tables, accesses: processed.accesses))
+  Ok(ExtractorResult(
+    tables: processed.tables,
+    accesses: processed.accesses,
+    indexes: processed.indexes,
+  ))
 }
 
 //-----------------------------------------------------------------------------------------------//
