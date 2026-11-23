@@ -7,7 +7,7 @@ An (experimental) code generation library for .surql files.
 
 ```toml
 [dev_dependencies]
-suweal_gen = ">= 0.8.0 and < 1.0.0"
+suweal_gen = ">= 0.9.0 and < 1.0.0"
 ```
 
 # Running the generator
