@@ -30,11 +30,31 @@ import suweal/surreal_type.{type SurrealType}
 //                                         Dependencies                                          //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+/// Collect the module prefixes of the linked enumerations (`prefix.Enum`) of the fields,
+/// including those nested in objects.
+fn linked_enum_prefixes(fields: List(extractor.TableField)) -> List(String) {
+  list.flat_map(fields, fn(field) {
+    let nested = linked_enum_prefixes(field.object_fields)
+
+    case option.map(field.linked_enum, string.split_once(_, ".")) {
+      option.Some(Ok(#(prefix, _))) -> [prefix, ..nested]
+      _ -> nested
+    }
+  })
+  |> list.unique
+}
+
 fn resolve_dependencies(
   module: module.Module,
   fields: List(extractor.TableField),
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> #(module.Module, List(extractor.TableField)) {
+  // Enumerations defined in another table (delegated tables) need that table's module
+  let module =
+    list.fold(linked_enum_prefixes(fields), module, fn(module, prefix) {
+      module.add_import(module, ["#TABLE:" <> prefix])
+    })
+
   list.fold(fields, #(module, []), fn(acc, field) {
     let #(module, fields) = acc
 
@@ -2148,7 +2168,7 @@ fn process_delegated_table_internal(
   tables: dict.Dict(String, extractor.TableInfo),
 ) -> dict.Dict(String, extractor.TableInfo) {
   tables
-  |> dict.map_values(fn(_, info) {
+  |> dict.map_values(fn(name, info) {
     case info.delegated {
       option.Some(node.Select(fields:, table:, ..)) ->
         {
@@ -2164,18 +2184,16 @@ fn process_delegated_table_internal(
                   list.find(table_info.fields, fn(f) { f.name == "id" })
                   |> result.map(fn(f) {
                     extractor.TableField(
-                      dependencies: f.dependencies,
+                      dependencies: [
+                        string.remove_prefix(info.path, "./src/"),
+                      ],
                       name: field.alias |> option.unwrap("id"),
+                      // The id identifies the delegated table itself, not its target
                       type_: case f.type_ {
-                        surreal_type.Identifier(name) ->
-                          surreal_type.Identifier(
-                            table_info.path
-                            |> string.split("/")
-                            |> list.last()
-                            |> result.unwrap("??")
-                            <> "."
-                            <> name,
-                          )
+                        surreal_type.Identifier(_) ->
+                          surreal_type.Identifier(id_case.string_to_pascal_case(
+                            name,
+                          ))
                         _ -> f.type_
                       },
                       linked_enum: f.linked_enum,
