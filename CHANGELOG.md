@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.9.1
+Released on November 24th 2026
+
+### Bug fixees
+- Fixed issue with generated identifier from view table (`DEFINE ... AS ...`)
+
 ## Version 0.9.0
 Released on November 23rd 2026
 
