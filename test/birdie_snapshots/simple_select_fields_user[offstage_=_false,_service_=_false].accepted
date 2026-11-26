@@ -8,6 +8,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/option
 import suweal/node
+import suweal/surreal_ql
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                Query result                                //
@@ -33,6 +34,10 @@ pub fn to_json(self: QueryResult) -> json.Json {
       #("email", json.string(self.email)),
     ],
   )
+}
+
+pub fn parameters() -> List(#(String, surreal_ql.SurrealQL)) {
+  []
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

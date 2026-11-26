@@ -9,6 +9,7 @@ import gleam/option
 import pont/encode
 import pont/serialize
 import suweal/node
+import suweal/surreal_ql
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                Query result                                //
@@ -47,6 +48,10 @@ pub fn serializer() -> serialize.Serializer(QueryResult) {
 
 pub fn to_json(self: QueryResult) -> json.Json {
   encode.encode_json(self, serialize.encoder(serializer()))
+}
+
+pub fn parameters() -> List(#(String, surreal_ql.SurrealQL)) {
+  []
 }
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

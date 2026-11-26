@@ -53,6 +53,10 @@ pub fn to_json(self: QueryResult) -> json.Json {
   encode.encode_json(self, serialize.encoder(serializer()))
 }
 
+pub fn parameters() -> List(#(String, surreal_ql.SurrealQL)) {
+  []
+}
+
 pub fn query() -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
   query.query(
     resource: simple_user_table.table_name,

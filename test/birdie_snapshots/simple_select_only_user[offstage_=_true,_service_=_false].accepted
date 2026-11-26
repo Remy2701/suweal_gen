@@ -7,6 +7,7 @@ test_name: simple_select_only_user_with_backstage_test
 import db/test/simple_user_table
 import gleam/option
 import suweal/node
+import suweal/surreal_ql
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                Query result                                //
@@ -17,6 +18,10 @@ pub type QueryResult = simple_user_table.User
 pub const to_json = simple_user_table.to_json
 
 pub const serializer = simple_user_table.serializer
+
+pub fn parameters() -> List(#(String, surreal_ql.SurrealQL)) {
+  []
+}
 
 // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                 Raw query                                  //

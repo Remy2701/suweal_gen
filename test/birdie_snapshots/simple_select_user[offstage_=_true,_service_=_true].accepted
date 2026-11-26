@@ -22,6 +22,10 @@ pub const to_json = simple_user_table.to_json
 
 pub const serializer = simple_user_table.serializer
 
+pub fn parameters() -> List(#(String, surreal_ql.SurrealQL)) {
+  []
+}
+
 pub fn query() -> query.Query(List(QueryResult), option.Option(List(QueryResult))) {
   query.query(
     resource: simple_user_table.table_name,
