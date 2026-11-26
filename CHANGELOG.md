@@ -1,9 +1,15 @@
 # Changelog
 
+## Version 0.9.2
+Released on November 25th 2026
+
+### Bug fixes
+- Fixed issue with `parameter` when no parameters
+
 ## Version 0.9.1
 Released on November 24th 2026
 
-### Bug fixees
+### Bug fixes
 - Fixed issue with generated identifier from view table (`DEFINE ... AS ...`)
 
 ## Version 0.9.0

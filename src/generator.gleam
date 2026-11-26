@@ -1110,13 +1110,9 @@ fn do_select_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  let module = case parameters {
-    [] -> module
-    _ -> {
-      module
-      |> module.root.add(parameters_builder.generate(parameters))
-    }
-  }
+  let module =
+    module
+    |> module.root.add(parameters_builder.generate(parameters))
 
   let module = case config.service {
     True ->
@@ -1229,10 +1225,9 @@ fn do_update_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  let module = case parameters {
-    [] -> module
-    _ -> module.root.add(module, parameters_builder.generate(parameters))
-  }
+  let module =
+    module
+    |> module.root.add(parameters_builder.generate(parameters))
 
   let module = case config.service {
     True ->
@@ -1336,10 +1331,9 @@ fn do_create_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  let module = case parameters {
-    [] -> module
-    _ -> module.root.add(module, parameters_builder.generate(parameters))
-  }
+  let module =
+    module
+    |> module.root.add(parameters_builder.generate(parameters))
 
   let module = case config.service {
     True ->
@@ -1533,10 +1527,9 @@ fn do_delete_node(
         |> list.flatten()
         |> complete_parameter_extraction()
 
-      let module = case parameters {
-        [] -> module
-        _ -> module.root.add(module, parameters_builder.generate(parameters))
-      }
+      let module =
+        module
+        |> module.root.add(parameters_builder.generate(parameters))
 
       let module = case config.service {
         True ->
@@ -1674,10 +1667,9 @@ fn do_delete_node(
         |> list.flatten()
         |> complete_parameter_extraction()
 
-      let module = case parameters {
-        [] -> module
-        _ -> module.root.add(module, parameters_builder.generate(parameters))
-      }
+      let module =
+        module
+        |> module.root.add(parameters_builder.generate(parameters))
 
       let module = case config.service {
         True ->
@@ -1815,10 +1807,9 @@ fn do_delete_node(
         |> list.flatten()
         |> complete_parameter_extraction()
 
-      let module = case parameters {
-        [] -> module
-        _ -> module.root.add(module, parameters_builder.generate(parameters))
-      }
+      let module =
+        module
+        |> module.root.add(parameters_builder.generate(parameters))
 
       let module = case config.service {
         True ->
@@ -1912,10 +1903,9 @@ fn do_delete_node(
         |> list.flatten()
         |> complete_parameter_extraction()
 
-      let module = case parameters {
-        [] -> module
-        _ -> module.root.add(module, parameters_builder.generate(parameters))
-      }
+      let module =
+        module
+        |> module.root.add(parameters_builder.generate(parameters))
 
       let module = case config.service {
         True ->
@@ -2097,10 +2087,9 @@ fn do_relate_node(
     |> list.flatten()
     |> complete_parameter_extraction()
 
-  let module = case parameters {
-    [] -> module
-    _ -> module.root.add(module, parameters_builder.generate(parameters))
-  }
+  let module =
+    module
+    |> module.root.add(parameters_builder.generate(parameters))
 
   let module = case config.service {
     True ->
